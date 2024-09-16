@@ -1,6 +1,6 @@
 <?php
 //Can't do 8080 on local because 8080 is reserved by Steam.
-$PORT = 8800;
+$PORT = 2052;
 
 /*
  * Check Kanri for todo list
