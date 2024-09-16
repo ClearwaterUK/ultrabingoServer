@@ -41,7 +41,7 @@ function createRoomInDatabase($roomData)
     try {
         $data = new RoomDataDB($roomData);
 
-        $request = $dbc->prepare("INSERT INTO currentgames(R_NAME,R_PASSWORD,R_HOSTEDBY,R_GAMETYPE,R_MAXPLAYERS,R_CURRENTPLAYERS,R_NUMTEAMS,R_PRANKREQUIRED,R_HASSTARTED) VALUES (?,?,?,?,?,1,2,?,0)");
+        $request = $dbc->prepare("INSERT INTO currentGames(R_NAME,R_PASSWORD,R_HOSTEDBY,R_GAMETYPE,R_MAXPLAYERS,R_CURRENTPLAYERS,R_NUMTEAMS,R_PRANKREQUIRED,R_HASSTARTED) VALUES (?,?,?,?,?,1,2,?,0)");
         $request->bindParam(1,$data->roomName,PDO::PARAM_STR);
         $request->bindParam(2,$data->roomPassword,PDO::PARAM_STR);
         $request->bindParam(3,$data->roomHostedBy,PDO::PARAM_STR);
@@ -50,7 +50,7 @@ function createRoomInDatabase($roomData)
         $request->bindParam(6,$data->pRankRequired,PDO::PARAM_BOOL);
         $request->execute();
 
-        $request2 = $dbc->prepare("SELECT R_ID FROM currentgames WHERE R_NAME = ? ORDER BY R_ID DESC LIMIT 1");
+        $request2 = $dbc->prepare("SELECT R_ID FROM currentGames WHERE R_NAME = ? ORDER BY R_ID DESC LIMIT 1");
         $request2->bindParam(1,$data->roomName);
         $request2->execute();
 
@@ -64,11 +64,12 @@ function createRoomInDatabase($roomData)
 
 }
 
+//TODO: Move this to DB.php
 function lookForGame($roomId)
 {
     global $dbc;
 
-    $request = $dbc->prepare("SELECT * FROM currentgames WHERE R_ID = ?");
+    $request = $dbc->prepare("SELECT * FROM currentGames WHERE R_ID = ?");
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
 
