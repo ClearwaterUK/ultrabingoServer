@@ -350,7 +350,7 @@ class GameController
         foreach($game->currentPlayers as &$player)
         {
             sendEncodedMessage($em,$player->websocketConnection);
-            $player->websocketconnection->close(1000,"Closing");
+            $player->websocketConnection->close(1000,"Closing");
             unset($game->currentPlayers[$player]);
         }
     }
