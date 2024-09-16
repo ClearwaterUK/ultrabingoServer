@@ -58,6 +58,7 @@ function createRoomInDatabase($roomData)
     }
     catch(Exception $e)
     {
+        echo($e->getMessage());
         return 0;
     }
 
