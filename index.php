@@ -27,8 +27,8 @@ function decodeMessage($message)
 function sendEncodedMessage($messageToSend,$connection)
 {
     $encodedMessage = base64_encode(json_encode($messageToSend));
-    echo("Sending base64 message:\n");
-    echo($encodedMessage."\n");
+    //echo("Sending base64 message:\n");
+    //echo($encodedMessage."\n");
     $connection->text($encodedMessage);
 }
 
@@ -56,8 +56,8 @@ function onMessageRecieved($message,$connection)
                 echo("Room created in DB, got room id: ".$roomId."\n");
                 $status = "ok";
                 echo("Setting up game ".$roomId." in game coordinator\n");
-                $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection);
-                //var_export($game);
+                $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
+                echo("Game created\n");
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
             }
@@ -102,7 +102,7 @@ function onMessageRecieved($message,$connection)
         case "LeaveGame":
         {
             echo("Client wants to leave game id ".$receivedJson['roomId']." \n");
-            $checkResult = $gameCoordinator->checkPlayerBeforeRemoving($receivedJson['username'],$receivedJson['roomId']);
+            $checkResult = $gameCoordinator->checkPlayerBeforeRemoving($receivedJson['username'],$receivedJson['roomId'],$receivedJson['steamId']);
             if($checkResult < 0)
             {
                 echo("Unable to remove the specified player\n");
@@ -122,7 +122,7 @@ function onMessageRecieved($message,$connection)
                 //If player is not the host, simply disconnect and remove just the player.
                 else
                 {
-                    $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username']);
+                    $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId']);
                 }
             }
             break;
@@ -143,22 +143,22 @@ function onMessageRecieved($message,$connection)
                     if($hasObtainedBingo)
                     {
                         $bingoSignal = new EndGameSignal($receivedJson['team']);
-                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as &$player)
+                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
                             $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
-                            echo("Sending end game signal to ".$player->username."\n");
-                            sendEncodedMessage($message,$player->websocketConnection);
+                            echo("Sending end game signal to ".$playerObj->username."\n");
+                            sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
                     }
                     else
                     {
                         $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$receivedJson['mapName'],$submitResult,$receivedJson['row'],$receivedJson['column']);
 
-                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as &$player)
+                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
                             $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                            echo("Sending level claim msg to ".$player->username."\n");
-                            sendEncodedMessage($message,$player->websocketConnection);
+                            echo("Sending level claim msg to ".$playerObj->username."\n");
+                            sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
                     }
                 }

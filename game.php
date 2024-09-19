@@ -89,7 +89,7 @@ class GameGrid
 //Represents a player currently connected to a game.
 class GamePlayer
 {
-    //public $steamId;
+    public $steamId;
     public $username;
     public $websocketConnection;
     public $team;
@@ -122,7 +122,7 @@ class Game
 
     public $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
 
-    public function __construct($hostSteamName,$hostConnection,$gameId)
+    public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
         $this->currentPlayers = [];
         $this->grid = [];
@@ -133,9 +133,9 @@ class Game
         $host = new GamePlayer($hostSteamName,$hostConnection);
 
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
-        $this->addPlayerToGame($host,true);
+        $this->addPlayerToGame($host,$hostSteamId,true);
 
-        //Pre-generate the grid of levels. (3x3 for now, will move to 5x5 in future)
+        //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
         $this->grid = new GameGrid(3);
 
         $this->gameState = GameState::inLobby;
@@ -144,13 +144,16 @@ class Game
     //Adds a player to the current Game.
     // $player: A GamePlayer representing a player.
     // $isHost: Bool indicating if the $player being added is the host.
-    public function addPlayerToGame(GamePlayer $player,bool $isHost=false): void
+    public function addPlayerToGame(GamePlayer $player, string $playerSteamId, bool $isHost=false): void
     {
+        //Because PHP likes to autoconvert SteamIDs to int, resulting in loss of data when accessed later, we prepend
+        // something to it to forcibly store it as a string. Later we cut out the prepended token when accessing.
         echo("Adding player ".$player->username. " to game ".$this->gameId."\n");
-        array_push($this->currentPlayers,$player);
+
+        $this->currentPlayers[$playerSteamId] = $player;
         if($isHost)
         {
-            $this->gameHost = $player;
+            $this->gameHost = $playerSteamId;
         }
     }
 
@@ -238,14 +241,12 @@ class Game
             $this->teams[$val] = array();
         }
 
-        //Randomise player order
-        shuffle($this->currentPlayers);
-
+        //TODO: Randomise player order
         $colorMarker = 1;
-        foreach($this->currentPlayers as &$player)
+        foreach($this->currentPlayers as $playerSteamId => &$playerObj)
         {
-            $player->team = $teamPointers[$colorMarker];
-            $this->putPlayerInTeam($player->username,$colorMarker);
+            $playerObj->team = $teamPointers[$colorMarker];
+            $this->putPlayerInTeam($playerObj->username,$colorMarker);
             if($colorMarker == $MAX_TEAMS) {$colorMarker == 1;}
             else{$colorMarker++;}
         }
@@ -259,11 +260,12 @@ class GameController
 {
     public $currentGames; //A list of current game's that are ongoing. Each entry is represented by an id and an associated Game object.
 
-    public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection)
+    public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId)
     {
-        echo("Creating game with id ".$gameId.", host is ".$hostSteamName."\n");
-        $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId);
+        echo("Creating game with id ".$gameId.", host is ".$hostSteamName.", SteamID is ".$hostSteamId."\n");
+        $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId,$hostSteamId);
         $this->currentGames[$gameId] = $gameToCreate;
+
         return $gameToCreate;
     }
 
@@ -311,25 +313,25 @@ class GameController
         }
     }
 
+
     public function startGame(Int $gameId)
     {
         if(array_key_exists($gameId,$this->currentGames))
         {
-            echo("Game exists, splitting all current players into teams\n");
-            
             $gameToStart = $this->currentGames[$gameId];
+            echo("Game exists, splitting all current players into teams\n");
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
 
             //Send the game start signal to all players in the game
-            foreach($gameToStart->currentPlayers as &$player)
+            foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
-                echo("Telling client ".$player->username." to start\n");
+                echo("Telling client ".$playerObj->username."(".$playerObj->steamId.") to start\n");
 
-                $startSignal = new StartGameSignal($player->team,$gameToStart->teams[$player->team]);
+                $startSignal = new StartGameSignal($playerObj->team,$gameToStart->teams[$playerObj->team]);
 
                 $message = new EncapsulatedMessage("StartGame",json_encode($startSignal));
-                sendEncodedMessage($message,$player->websocketConnection);
+                sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
         else
@@ -338,15 +340,15 @@ class GameController
         }
     }
 
-    public function checkPlayerBeforeRemoving(string $username, Int $gameId)
+    public function checkPlayerBeforeRemoving(string $username, Int $gameId, string $steamId)
     {
         if(array_key_exists($gameId,$this->currentGames))
         {
             $currentGame = $this->currentGames[$gameId];
-            foreach($currentGame->currentPlayers as &$player) {
-                if ($player->username == $username) {
-                    echo("Found our player\n");
-                    if($player == $currentGame->gameHost)
+            foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
+                if ($playerSteamId == $steamId) {
+                    echo("Found our player's steamID\n");
+                    if($playerSteamId == $currentGame->gameHost)
                     {
                         echo("Player to remove is the host, deleting the whole game!\n");
                         return 1;
@@ -368,7 +370,7 @@ class GameController
         }
     }
 
-    public function disconnectPlayer(Int $gameid, string $playername)
+    public function disconnectPlayer(Int $gameid, string $playername, string $steamId)
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
@@ -381,19 +383,19 @@ class GameController
         $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
         $em2 = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
 
-        foreach($game->currentPlayers as &$player)
+        foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
-            if($player->username == $playername)
+            if($playerObj->username == $playername)
             {
-                sendEncodedMessage($em,$player->websocketConnection);
-                $player->websocketconnection->close(1000,"Closing");
-                unset($game->currentPlayers[$player]);
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+                $playerObj->websocketconnection->close(1000,"Closing");
+                unset($game->currentPlayers[$playerObj]);
                 return;
             }
             else
             {
                 //Notify all other players of the player leaving the game.
-                sendEncodedMessage($em2,$player->websocketConnection);
+                sendEncodedMessage($em2,$playerObj->websocketConnection);
             }
         }
     }
@@ -409,13 +411,11 @@ class GameController
 
         //var_export($game->currentPlayers);
 
-        $index = 0;
-        foreach($game->currentPlayers as &$player)
+        foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$player->websocketConnection);
-            $player->websocketConnection->close(1000,"Closing");
-            unset($game->currentPlayers[$index]);
-            $index++;
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+            $playerObj->websocketConnection->close(1000,"Closing");
+            unset($game->currentPlayers[$playerSteamId]);
         }
     }
 
@@ -425,7 +425,7 @@ class GameController
         unset($this->currentGames[$gameId]);
     }
 
-    public function verifyRunSubmission($submissionData)
+    public function verifyRunSubmission($submissionData): bool
     {
         //When receiving a rub submission request:
         // Check if the game id exists.
@@ -435,11 +435,12 @@ class GameController
             echo("Game found in current list\n");
             $currentGame = $this->currentGames[$gameId];
             // Check if the player is connected to the currently connected game.
-            foreach($currentGame->currentPlayers as &$player)
+            foreach($currentGame->currentPlayers as $playerSteamId => &$player)
             {
-                if($player->username == $submissionData['playerName'])
+                echo($playerSteamId."\n");
+                if($playerSteamId == $submissionData['steamId'])
                 {
-                    echo("Found our player\n");
+                    echo("Found our player's SteamID\n");
                     $submittedCoords = $submissionData['row']."-".$submissionData['column'];
 
                     echo("Player is submitting at position ".$submittedCoords." which in our current card is ".$currentGame->grid->levelTable[$submittedCoords]->levelName."\n");
@@ -458,7 +459,7 @@ class GameController
                     }
                 }
             }
-            echo("Couldn't find the player in the game's roster!\n");
+            echo("Couldn't find the player SteamID in the game's roster!\n");
             return false;
         }
         else{
