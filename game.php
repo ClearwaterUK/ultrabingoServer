@@ -67,10 +67,11 @@ class GameGrid
             for($y = 0; $y <= $this->size-1; $y++)
             {
                 //Pick a level from our level list, set it, and then remove to prevent duplicates
-                $rand = $levelList[array_rand($levelList)];
+                $selectedIndex = array_rand($levelList);
+                $rand = $levelList[$selectedIndex];
                 $levelToInsert = new GameLevel($rand,$x,$y);
                 $this->levelTable[$x."-".$y] = $levelToInsert;
-                unset($levelList[$rand]);
+                unset($levelList[$selectedIndex]);
             }
         }
     }
@@ -81,7 +82,7 @@ class GameGrid
         echo("Constructing grid\n");
         $this->populateGrid();
         echo("Grid made\n");
-        var_export($this->levelTable);
+        //var_export($this->levelTable);
     }
 }
 
@@ -164,6 +165,65 @@ class Game
         global $teamPointers;
 
         array_push($this->teams[$teamPointers[$teamColor]],$player);
+    }
+
+    public function checkForBingo($team,$coordX,$coordY)
+    {
+        $horizontal = true;
+        $vertical = true;
+        $diagonalDown = true;
+        $diagonalUp = true;
+
+
+        $teamCol = Team::tryFrom($team);
+
+        //Horizontal check
+        for($x = 0; $x < $this->grid->size; $x++)
+        {
+            if($this->grid->levelTable[$x."-".$coordY]->claimedBy != $teamCol)
+            {
+                $horizontal = false;
+                break;
+            }
+        }
+
+        //Vertical check
+        for($y = 0; $y < $this->grid->size; $y++)
+        {
+            if($this->grid->levelTable[$coordX."-".$y]->claimedBy != $teamCol)
+            {
+                $vertical = false;
+                break;
+            }
+        }
+
+        //Diagonal check down
+        for($zDown = 0; $zDown < $this->grid->size; $zDown++)
+        {
+            if($this->grid->levelTable[$zDown."-".$zDown]->claimedBy != $teamCol)
+            {
+                $diagonalDown = false;
+                break;
+            }
+        }
+        //Diagonal check up
+        $helper = 0;
+        for($zUp = $this->grid->size-1; $zUp > -1; $zUp--)
+        {
+            if($this->grid->levelTable[$zUp."-".$helper]->claimedBy != $teamCol)
+            {
+                $diagonalUp = false;
+                break;
+            }
+            $helper++;
+        }
+
+        if($horizontal || $vertical || $diagonalDown || $diagonalUp)
+        {
+            echo("WE GOT A BINGO!!\n");
+        }
+
+        return($horizontal || $vertical || $diagonalUp || $diagonalDown);
     }
 
     //Split all Players connected to the Game into teams when the Game is started.
@@ -347,11 +407,15 @@ class GameController
 
         $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
 
+        //var_export($game->currentPlayers);
+
+        $index = 0;
         foreach($game->currentPlayers as &$player)
         {
             sendEncodedMessage($em,$player->websocketConnection);
             $player->websocketConnection->close(1000,"Closing");
-            unset($game->currentPlayers[$player]);
+            unset($game->currentPlayers[$index]);
+            $index++;
         }
     }
 
@@ -437,14 +501,13 @@ class GameController
             if(($currentGame->criteriaType == 1 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->criteriaType == 2 && $submissionData['style'] > $levelInCard->styleToBeat))
             {
                 //Same team/person
-                if($levelInCard->claimedBy == $submissionData['team'])
+                if($levelInCard->claimedBy == Team::tryFrom($submissionData['team']))
                 {
-                    $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
+                    echo("Level already claimed by player/team, improving\n");
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
                     $levelInCard->styleToBeat = $submissionData['style'];
 
-                    echo("Level already claimed by player/team, improving\n");
                     return 1;
                 }
                 else
@@ -463,7 +526,6 @@ class GameController
                 return -1;
             }
         }
-
     }
 
     public function __construct()

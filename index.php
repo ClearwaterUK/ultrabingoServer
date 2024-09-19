@@ -57,7 +57,7 @@ function onMessageRecieved($message,$connection)
                 $status = "ok";
                 echo("Setting up game ".$roomId." in game coordinator\n");
                 $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection);
-                var_export($game);
+                //var_export($game);
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
             }
@@ -125,7 +125,7 @@ function onMessageRecieved($message,$connection)
                     $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username']);
                 }
             }
-
+            break;
         }
 
         case "SubmitRun":
@@ -137,13 +137,29 @@ function onMessageRecieved($message,$connection)
                 $submitResult = $gameCoordinator->submitRun($receivedJson);
                 if($submitResult >= 0)
                 {
-                    $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$receivedJson['mapName'],$submitResult,$receivedJson['row'],$receivedJson['column']);
+                    //Check if the claimed level resulted in a bingo.
+                    $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
 
-                    foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as &$player)
+                    if($hasObtainedBingo)
                     {
-                        $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                        echo("Sending level claim msg to ".$player->username."\n");
-                        sendEncodedMessage($message,$player->websocketConnection);
+                        $bingoSignal = new EndGameSignal($receivedJson['team']);
+                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as &$player)
+                        {
+                            $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
+                            echo("Sending end game signal to ".$player->username."\n");
+                            sendEncodedMessage($message,$player->websocketConnection);
+                        }
+                    }
+                    else
+                    {
+                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$receivedJson['mapName'],$submitResult,$receivedJson['row'],$receivedJson['column']);
+
+                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as &$player)
+                        {
+                            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
+                            echo("Sending level claim msg to ".$player->username."\n");
+                            sendEncodedMessage($message,$player->websocketConnection);
+                        }
                     }
                 }
             }
@@ -151,9 +167,7 @@ function onMessageRecieved($message,$connection)
             {
                 echo("Run submission was invalid - rejecting\n");
             }
-
             break;
-
         }
 
         default: {echo "Unknown message, discarding\n"; break;}
