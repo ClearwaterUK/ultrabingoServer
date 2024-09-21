@@ -76,7 +76,7 @@ function onMessageRecieved($message,$connection)
 
         case "JoinRoom":
         {
-            echo("Recieved request to join room id ".$receivedJson['roomId']);
+            echo("Recieved request to join room id ".$receivedJson['roomId']."\n");
 
             $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$connection);
 
@@ -89,6 +89,13 @@ function onMessageRecieved($message,$connection)
 
             sendEncodedMessage($em,$connection);
 
+            break;
+        }
+
+        case "UpdateRoomSettings":
+        {
+            echo("Recieved update room settings signal for room id ".$receivedJson['roomId']."\n");
+            $gameCoordinator->updateGameSettings($receivedJson);
             break;
         }
 

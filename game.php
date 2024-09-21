@@ -106,21 +106,41 @@ class GamePlayer
     }
 }
 
+class GameSettings
+{
+    public $maxPlayers;
+    public $maxTeams;
+    public $requiresPRank;
+    public $gameType;
+    public $difficulty;
+
+    public function __construct()
+    {
+        $this->maxPlayers = 8;
+        $this->maxTeams = 4;
+        $this->requiresPRank = false;
+        $this->gameType = 0; //Time by default
+        $this->difficulty = 0; //Harmless by default
+    }
+}
+
 class Game
 {
     public $gameId;
 
-    public $currentPlayers; //List of players. A player is represented by the GamePlayer class.
+    public $currentPlayers; //List of players. Each player is represented via a <SteamID,GamePlayer> format.
 
     public $grid; //Our NxN bingo grid.
 
-    public $gameHost; //The player who is hosting the game. Represented by GamePlayer class.
+    public $gameHost; //The player who is hosting the game. Represented by a string containing the SteamID of the host.
 
     public $gameState; //Current state of the game, represented by GameState enum.
 
     public $criteriaType; //What criteria? 1 = time, 2 = style.
 
     public $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
+
+    public $gameSettings; //Settings for the game, represented by a GameSettings object.
 
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
@@ -130,10 +150,12 @@ class Game
 
         $this->criteriaType = 1; //Time only for now, will add style support later
 
-        $host = new GamePlayer($hostSteamName,$hostConnection);
-
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
+        $host = new GamePlayer($hostSteamName,$hostConnection);
         $this->addPlayerToGame($host,$hostSteamId,true);
+
+        //Set the default settings.
+        $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
         $this->grid = new GameGrid(3);
@@ -313,6 +335,39 @@ class GameController
         }
     }
 
+    public function updateGameSettings($settings)
+    {
+        if(array_key_exists($settings['roomId'],$this->currentGames))
+        {
+            $gameToUpdate = $this->currentGames[$settings['roomId']];
+
+            $newSettings = new GameSettings();
+            $newSettings->maxPlayers = $settings['maxPlayers'];
+            $newSettings->maxTeams = $settings['maxTeams'];
+            $newSettings->requiresPRank = $settings['PRankRequired'];
+            $newSettings->gameType = $settings['gameType'];
+            $newSettings->difficulty = $settings['difficulty'];
+            $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
+
+            echo("Notifying all non-host players of changed settings\n");
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty']);
+            $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
+
+            foreach($gameToUpdate->currentPlayers as $playerSteamId => &$playerObj)
+            {
+                if($playerSteamId != $gameToUpdate->gameHost)
+                {
+                    sendEncodedMessage($em,$playerObj->websocketConnection);
+                }
+            }
+            return;
+        }
+        else
+        {
+            echo("Trying to update settings for game id ".$settings['roomId']." but doesn't exist!`\n");
+            return;
+        }
+    }
 
     public function startGame(Int $gameId)
     {
@@ -355,7 +410,7 @@ class GameController
                     }
                     else
                     {
-                        echo("Normal player, removing");
+                        echo("Normal player, removing\n");
                         return 0;
                     }
                 }
@@ -488,7 +543,7 @@ class GameController
 
         if($levelInCard->claimedBy == Team::NONE)
         {
-            echo("Level is unclaimed, claiming for their team");
+            echo("Level is unclaimed, claiming for their team\n");
 
             $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
             $levelInCard->personToBeat = $submissionData['playerName'];
