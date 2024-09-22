@@ -291,7 +291,7 @@ class GameController
         return $gameToCreate;
     }
 
-    public function joinGame(Int $gameId, string $playerName, WebSocket\Connection $playerConnection)
+    public function joinGame(Int $gameId, string $playerName, string $playerSteamId, WebSocket\Connection $playerConnection)
     {
         // Lookup the game id in the DB and see if it exists.
         $gameLookup = lookForGame($gameId);
@@ -326,7 +326,7 @@ class GameController
 
             //Add the new player to the player list of the Game.
             $playerToAdd = new GamePlayer($playerName,$playerConnection);
-            $this->currentGames[$gameId]->addPlayerToGame($playerToAdd);
+            $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$playerSteamId);
             return $this->currentGames[$gameId];
         }
         else

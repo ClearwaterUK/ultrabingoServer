@@ -78,7 +78,7 @@ function onMessageRecieved($message,$connection)
         {
             echo("Recieved request to join room id ".$receivedJson['roomId']."\n");
 
-            $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$connection);
+            $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
 
             $status = (gettype($gameToJoin) == "integer") ? $gameToJoin : 0;
             $roomId = $receivedJson['roomId'];
