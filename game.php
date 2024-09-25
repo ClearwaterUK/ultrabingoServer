@@ -326,7 +326,7 @@ class GameController
             }
 
             //Add the new player to the player list of the Game.
-            $playerToAdd = new GamePlayer($playerName,$playerConnection);
+            $playerToAdd = new GamePlayer($playerName,$playerSteamId,$playerConnection);
             $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$playerSteamId);
             return $this->currentGames[$gameId];
         }
