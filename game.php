@@ -94,10 +94,11 @@ class GamePlayer
     public $websocketConnection;
     public $team;
 
-    public function __construct($playerName,$playerConnection)
+    public function __construct($playerName,$playerSteamId,$playerConnection)
     {
         $this->username = $playerName;
         $this->websocketConnection = $playerConnection;
+        $this->steamId = $playerSteamId;
     }
 
     public function setTeam($team)
@@ -151,7 +152,7 @@ class Game
         $this->criteriaType = 1; //Time only for now, will add style support later
 
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
-        $host = new GamePlayer($hostSteamName,$hostConnection);
+        $host = new GamePlayer($hostSteamName,$hostSteamId,$hostConnection);
         $this->addPlayerToGame($host,$hostSteamId,true);
 
         //Set the default settings.
@@ -554,7 +555,7 @@ class GameController
         }
         else
         {
-            if(($currentGame->criteriaType == 1 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->criteriaType == 2 && $submissionData['style'] > $levelInCard->styleToBeat))
+            if(($currentGame->criteriaType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->criteriaType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
             {
                 //Same team/person
                 if($levelInCard->claimedBy == Team::tryFrom($submissionData['team']))
