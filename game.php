@@ -445,6 +445,7 @@ class GameController
             {
                 sendEncodedMessage($em,$playerObj->websocketConnection);
                 $playerObj->websocketconnection->close(1000,"Closing");
+                dropConnectionFromCurrentConnections($playerObj->websocketConnection);
                 unset($game->currentPlayers[$playerObj]);
                 return;
             }
@@ -471,6 +472,7 @@ class GameController
         {
             sendEncodedMessage($em,$playerObj->websocketConnection);
             $playerObj->websocketConnection->close(1000,"Closing");
+            dropConnectionFromCurrentConnections($playerObj->websocketConnection);
             unset($game->currentPlayers[$playerSteamId]);
         }
     }

@@ -85,5 +85,47 @@ function lookForGame($roomId)
     }
 }
 
+function addConnectionToCurrentConnections($connection,$roomId)
+{
+    global $connectionLog;
+
+    $connectionHash = spl_object_hash($connection);
+    var_export($connectionHash);
+
+    if(isset($connectionLog[$connectionHash]))
+    {
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection already exists in our log, overwriting\n");
+    }
+
+    $connectionLog[$connectionHash] = $roomId;
+}
+
+function dropConnectionFromCurrentConnections($connection)
+{
+    global $connectionLog;
+
+    $connectionHash = spl_object_hash($connection);
+
+    if(!isset($connectionLog[$connectionHash]))
+    {
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection doesn't exist in our log...\n");
+    }
+
+    unset($connectionLog[$connectionHash]);
+}
+
+function getRoomFromConnection($connection)
+{
+    $connectionHash = spl_object_hash($connection);
+    if(isset($connectionLog[$connectionHash]))
+    {
+       return $connectionLog[$connectionHash];
+    }
+    else
+    {
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection is not playing a game\n");
+        return null;
+    }
+}
 
 ?>

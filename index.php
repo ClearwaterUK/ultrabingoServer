@@ -10,13 +10,14 @@ $PORT = 2052;
 $MAX_CONCURRENT_CONNECTIONS = 64;
 $TIMEOUT = 30;
 
+$connectionLog = array();
+
 require_once('functions.php');
 
 //Load all the NetworkMessage classes from the folder
 $networkMessageFolder = glob('./NetworkMessages/*.php');
 foreach($networkMessageFolder as $file)
 {
-
     require_once $file;
 }
 
@@ -33,16 +34,43 @@ function sendEncodedMessage($messageToSend,$connection)
     $connection->text($encodedMessage);
 }
 
-function handleError($connection,\WebSocket\Exception\Exception $exception)
+function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception)
 {
-    echo(Color::RED() . "Network error occured - Did a client drop?" . Color::reset() . "\n");
+    global $gameCoordinator;
 
-    echo(Color::RED() . $exception->getMessage() . "\n");
+    echo(Color::RED() . "Client was dropped - lost connection or was alt-tabbed for too long?" . Color::reset() . "\n");
+
+    echo(Color::RED() . $exception->getMessage() . " (".$exception->getCode().")". Color::reset() . "\n");
+
+    //Remove the dropped connection from any games that it was in.
+    $game = getRoomFromConnection($connection);
+    if($game != null)
+    {
+        //Go into the room id
+        $associatedGame = $gameCoordinator->currentGames[$game];
+        $key = array_search($connection,$associatedGame->currentPlayers);
+        if($key)
+        {
+            //Remove the player, then notify all other players of the connection loss.
+            $timeoutNotif = new TimeoutNotification($associatedGame->currentPlayers[$key]->username);
+            $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
+            unset($associatedGame->currentPlayers[$key]);
+
+            foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+            {
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+            }
+        }
+    }
+
+    dropConnectionFromCurrentConnections($connection);
+
 }
 
 function onMessageRecieved($message,$connection)
 {
     global $gameCoordinator;
+    global $connectionLog;
 
     echo("Incoming message\n");
 
@@ -68,6 +96,8 @@ function onMessageRecieved($message,$connection)
                 echo("Game created\n");
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
+
+                addConnectionToCurrentConnections($connection,$roomId);
             }
             else{
                 echo("Failed to create room for whatever reason\n");
@@ -96,6 +126,12 @@ function onMessageRecieved($message,$connection)
             $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
 
             sendEncodedMessage($em,$connection);
+
+            if($status == 0)
+            {
+                echo("Adding connection to current connection log\n");
+                $connectionLog[$connection] = $roomId;
+            }
 
             break;
         }
@@ -232,7 +268,7 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     {
         onMessageRecieved($message->getContent(),$connection);
     })
-    ->onError(function ($server, $connection, $exception)
+    ->onError(function (Client $client, Connection|null $connection, Exception $exception)
     {
         handleError($connection,$exception);
     })
