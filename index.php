@@ -1,13 +1,14 @@
 <?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Codedungeon\PHPCliColors\Color;
+
 //Can't do 8080 on local because 8080 is reserved by Steam.
 $PORT = 2052;
 
-/*
- * Check Kanri for todo list
- *
- */
-
-require __DIR__ . '/vendor/autoload.php';
+$MAX_CONCURRENT_CONNECTIONS = 64;
+$TIMEOUT = 30;
 
 require_once('functions.php');
 
@@ -15,7 +16,7 @@ require_once('functions.php');
 $networkMessageFolder = glob('./NetworkMessages/*.php');
 foreach($networkMessageFolder as $file)
 {
-    echo("Including: ".$file."\n");
+
     require_once $file;
 }
 
@@ -30,6 +31,13 @@ function sendEncodedMessage($messageToSend,$connection)
     //echo("Sending base64 message:\n");
     //echo($encodedMessage."\n");
     $connection->text($encodedMessage);
+}
+
+function handleError($connection,\WebSocket\Exception\Exception $exception)
+{
+    echo(Color::RED() . "Network error occured - Did a client drop?" . Color::reset() . "\n");
+
+    echo(Color::RED() . $exception->getMessage() . "\n");
 }
 
 function onMessageRecieved($message,$connection)
@@ -197,25 +205,25 @@ function loadEnvFile()
     $dotenv->load();
 }
 
-echo("Loading environment variables\n");
+echo(Color::light_blue(). "Loading environment variables".Color::reset()."\n");
 loadEnvFile();
 
-echo("Loading level list\n");
+echo(Color::light_blue() . "Loading level list".Color::reset()."\n");
 require_once ('./levels.php');
 
-echo("Initialising DB configuration\n");
+echo(Color::light_blue() . "Initialising DB configuration".Color::reset()."\n");
 require_once ('./DB.php');
 
-echo("Starting up game coordinator\n");
+echo(Color::light_blue() . "Starting up game coordinator".Color::reset()."\n");
 require_once('./game.php');
 
-echo("Starting webserver on port ".$PORT."\n");
+echo(Color::green() . "Starting webserver on port ".$PORT.Color::reset()."\n");
 
 $server = new WebSocket\Server($PORT,false);
 $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     ->addMiddleware(new WebSocket\Middleware\PingResponder())
-    ->setMaxConnections(8)
-    ->setTimeout(10)
+    ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
+    ->setTimeout($TIMEOUT)
     ->onConnect(function()
     {
         onClientConnect();
@@ -223,6 +231,10 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message)
     {
         onMessageRecieved($message->getContent(),$connection);
+    })
+    ->onError(function ($server, $connection, $exception)
+    {
+        handleError($connection,$exception);
     })
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
     {
