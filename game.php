@@ -439,15 +439,16 @@ class GameController
         $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
         $em2 = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
 
+        $indexToRemove = "";
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
             if($playerObj->username == $playername)
             {
+                //Remove the player from the game.
                 sendEncodedMessage($em,$playerObj->websocketConnection);
                 $playerObj->websocketConnection->close(1000,"Closing");
+                $indexToRemove = $playerSteamId;
                 dropFromConnectionTable($playerObj->websocketConnection);
-                unset($game->currentPlayers[$playerObj]);
-                return;
             }
             else
             {
@@ -455,6 +456,7 @@ class GameController
                 sendEncodedMessage($em2,$playerObj->websocketConnection);
             }
         }
+        unset($game->currentPlayers[$indexToRemove]);
     }
     
     public function disconnectAllPlayers(Int $gameid)
