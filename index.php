@@ -8,7 +8,7 @@ use Codedungeon\PHPCliColors\Color;
 $PORT = 2052;
 
 $MAX_CONCURRENT_CONNECTIONS = 64;
-$TIMEOUT = 30;
+$TIMEOUT = 1440;
 
 $connectionLog = array();
 
