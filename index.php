@@ -131,14 +131,12 @@ function onMessageRecieved($message,$connection)
 
             $jrr = new JoinRoomResponse($status,$roomId,$room);
             $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
-
-            addToConnectionTable($connection,$roomId,$receivedJson["username"]);
             sendEncodedMessage($em,$connection);
 
             if($status == 0)
             {
                 echo("Adding connection to current connection log\n");
-                $connectionLog[$connection] = $roomId;
+                addToConnectionTable($connection,$roomId,$receivedJson["username"]);
             }
 
             break;
