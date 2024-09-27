@@ -444,7 +444,7 @@ class GameController
             if($playerObj->username == $playername)
             {
                 sendEncodedMessage($em,$playerObj->websocketConnection);
-                $playerObj->websocketconnection->close(1000,"Closing");
+                $playerObj->websocketConnection->close(1000,"Closing");
                 dropFromConnectionTable($playerObj->websocketConnection);
                 unset($game->currentPlayers[$playerObj]);
                 return;
