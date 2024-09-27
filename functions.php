@@ -105,7 +105,7 @@ function dropConnectionFromCurrentConnections($connection)
     global $connectionLog;
 
     $connectionHash = spl_object_hash($connection);
-
+    echo("Given connection hash: ".$connectionHash);
     print_r($connectionLog);
 
     if(!isset($connectionLog[$connectionHash]))
