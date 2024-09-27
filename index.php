@@ -63,6 +63,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             else
             {
+                echo("Sending timeout notice to ".$playerObj->username."\n");
                 $timeoutNotif = new TimeoutNotification($username);
                 $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
                 sendEncodedMessage($em,$playerObj->websocketConnection);
