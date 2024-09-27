@@ -277,6 +277,10 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     ->onPing(function ($client, $connection, $message)
     {
         echo("Pong\n");
+        $pong = new Pong();
+        $em = new EncapsulatedMessage("Pong",json_encode($pong));
+        sendEncodedMessage($em,$connection);
+
     })
 
     ->onError(function ($server, $connection, $exception)
