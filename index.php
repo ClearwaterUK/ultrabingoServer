@@ -8,7 +8,7 @@ use Codedungeon\PHPCliColors\Color;
 $PORT = 2052;
 
 $MAX_CONCURRENT_CONNECTIONS = 64;
-$TIMEOUT = 1440;
+$TIMEOUT = 60;
 
 $connectionLog = array();
 
@@ -40,13 +40,12 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 {
     global $gameCoordinator;
 
-    echo(Color::RED() . "Client was dropped - lost connection or was alt-tabbed for too long?" . Color::reset() . "\n");
+    echo(Color::RED() . "Client was dropped - lost connection or alt-f4'd?" . Color::reset() . "\n");
 
     echo(Color::RED() . $exception->getMessage() . " (".$exception->getCode().")". Color::reset() . "\n");
 
     //Remove the dropped connection from the game that it was in.
     $gameDetails = getPlayerFromConnectionTable($connection);
-    var_export($gameDetails);
     if($gameDetails != null)
     {
         //Go into the room id
@@ -276,11 +275,9 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     })
     ->onPing(function ($client, $connection, $message)
     {
-        echo("Pong\n");
         $pong = new Pong();
         $em = new EncapsulatedMessage("Pong",json_encode($pong));
         sendEncodedMessage($em,$connection);
-
     })
 
     ->onError(function ($server, $connection, $exception)
