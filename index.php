@@ -12,6 +12,8 @@ $TIMEOUT = 30;
 
 $connectionLog = array();
 
+$steamIdToUsernameTable = array();
+
 require_once('functions.php');
 
 //Load all the NetworkMessage classes from the folder
@@ -42,38 +44,33 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
     echo(Color::RED() . $exception->getMessage() . " (".$exception->getCode().")". Color::reset() . "\n");
 
-    //Remove the dropped connection from any games that it was in.
-    $game = getRoomFromConnection($connection);
-    var_export($game);
-    if($game != null)
+    //Remove the dropped connection from the game that it was in.
+    $gameDetails = getPlayerFromConnectionTable($connection);
+    var_export($gameDetails);
+    if($gameDetails != null)
     {
         //Go into the room id
-        $associatedGame = $gameCoordinator->currentGames[$game];
-        print_r($associatedGame->currentPlayers);
-        $key = array_search($connection,$associatedGame->currentPlayers);
-        var_export($key);
-        if($key !== false)
-        {
-            echo("Key found, doing stuff");
-            //Remove the player, then notify all other players of the connection loss.
-            $timeoutNotif = new TimeoutNotification($associatedGame->currentPlayers[$key]->username);
-            $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
-            unset($associatedGame->currentPlayers[$key]);
-            echo("Dropped player sucessfully removed\n");
+        $associatedGame = $gameCoordinator->currentGames[$gameDetails[0]];
+        $username = $gameDetails[1];
 
-            foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+        $indexToUnset = "";
+        print_r($associatedGame->currentPlayers);
+        foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+        {
+            if($playerObj->username === $username)
             {
+                $indexToUnset = $playerSteamId;
+            }
+            else
+            {
+                $timeoutNotif = new TimeoutNotification($username);
+                $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
                 sendEncodedMessage($em,$playerObj->websocketConnection);
             }
         }
-        else
-        {
-            echo(\Codedungeon\PHPCliColors\Color::yellow() . "Dropped player was not found in the given game ".$key."?\n");
-        }
+        unset($associatedGame->currentPlayers[$indexToUnset]);
     }
-
-    dropConnectionFromCurrentConnections($connection);
-
+    dropFromConnectionTable($connection);
 }
 
 function onMessageRecieved($message,$connection)
@@ -106,7 +103,7 @@ function onMessageRecieved($message,$connection)
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
 
-                addConnectionToCurrentConnections($connection,$roomId);
+                addToConnectionTable($connection,$roomId,$receivedJson["hostSteamName"]);
             }
             else{
                 echo("Failed to create room for whatever reason\n");
@@ -134,6 +131,7 @@ function onMessageRecieved($message,$connection)
             $jrr = new JoinRoomResponse($status,$roomId,$room);
             $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
 
+            addToConnectionTable($connection,$roomId,$receivedJson["username"]);
             sendEncodedMessage($em,$connection);
 
             if($status == 0)

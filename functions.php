@@ -85,22 +85,20 @@ function lookForGame($roomId)
     }
 }
 
-function addConnectionToCurrentConnections($connection,$roomId)
+function addToConnectionTable($connection, $roomId,$username="defaultUser")
 {
     global $connectionLog;
 
     $connectionHash = spl_object_hash($connection);
-    var_export($connectionHash);
-
     if(isset($connectionLog[$connectionHash]))
     {
         echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection already exists in our log, overwriting\n");
     }
 
-    $connectionLog[$connectionHash] = $roomId;
+    $connectionLog[$connectionHash] = array($roomId,$username);
 }
 
-function dropConnectionFromCurrentConnections($connection)
+function dropFromConnectionTable($connection)
 {
     global $connectionLog;
 
@@ -116,7 +114,7 @@ function dropConnectionFromCurrentConnections($connection)
     unset($connectionLog[$connectionHash]);
 }
 
-function getRoomFromConnection($connection)
+function getPlayerFromConnectionTable($connection)
 {
     global $connectionLog;
 
