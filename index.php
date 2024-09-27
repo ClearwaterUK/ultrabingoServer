@@ -52,8 +52,9 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         print_r($associatedGame->currentPlayers);
         $key = array_search($connection,$associatedGame->currentPlayers);
         var_export($key);
-        if($key)
+        if($key !== false)
         {
+            echo("Key found, doing stuff");
             //Remove the player, then notify all other players of the connection loss.
             $timeoutNotif = new TimeoutNotification($associatedGame->currentPlayers[$key]->username);
             $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
