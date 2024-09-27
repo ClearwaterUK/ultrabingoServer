@@ -44,11 +44,14 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
     //Remove the dropped connection from any games that it was in.
     $game = getRoomFromConnection($connection);
+    var_export($game);
     if($game != null)
     {
         //Go into the room id
         $associatedGame = $gameCoordinator->currentGames[$game];
+        print_r($associatedGame->currentPlayers);
         $key = array_search($connection,$associatedGame->currentPlayers);
+        var_export($key);
         if($key)
         {
             //Remove the player, then notify all other players of the connection loss.
