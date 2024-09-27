@@ -270,9 +270,9 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     })
     ->onError(function ($client, $connection, $exception)
     {
-        echo(typeof($client)."\n");
-        echo(typeof($connection)."\n");
-        echo(typeof($exception)."\n");
+        echo(gettype($client)."\n");
+        echo(gettype($connection)."\n");
+        echo(gettype($exception)."\n");
         handleError($connection,$exception);
     })
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
