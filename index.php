@@ -54,7 +54,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         $username = $gameDetails[1];
 
         $indexToUnset = "";
-        print_r($associatedGame->currentPlayers);
+        //print_r($associatedGame->currentPlayers);
         foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
         {
             if($playerObj->username === $username)
