@@ -37,6 +37,9 @@ $levels = array(
     "Level 7-2",
     "Level 7-3",
     "Level 7-4",
+
+    "Level P-1",
+    "Level P-2"
 );
 
 
