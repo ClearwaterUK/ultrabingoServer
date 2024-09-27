@@ -121,7 +121,6 @@ function getRoomFromConnection($connection)
     global $connectionLog;
 
     $connectionHash = spl_object_hash($connection);
-    var_export($connectionLog[$connectionHash]);
     if(isset($connectionLog[$connectionHash]))
     {
        return $connectionLog[$connectionHash];

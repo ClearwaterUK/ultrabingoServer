@@ -55,11 +55,16 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             $timeoutNotif = new TimeoutNotification($associatedGame->currentPlayers[$key]->username);
             $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
             unset($associatedGame->currentPlayers[$key]);
+            echo("Dropped player sucessfully removed\n");
 
             foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
             {
                 sendEncodedMessage($em,$playerObj->websocketConnection);
             }
+        }
+        else
+        {
+            echo(\Codedungeon\PHPCliColors\Color::yellow() . "Dropped player was not found in the given game ".$key."?\n");
         }
     }
 
