@@ -274,6 +274,11 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     {
         onMessageRecieved($message->getContent(),$connection);
     })
+    ->onPing(function ($client, $connection, $message)
+    {
+        echo("Pong\n");
+    })
+
     ->onError(function ($server, $connection, $exception)
     {
         if($server <> null && $connection <> null && $exception <> null)
