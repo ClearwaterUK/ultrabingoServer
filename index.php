@@ -278,7 +278,11 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     })
     ->onError(function ($server, $connection, $exception)
     {
-        handleError($connection,$exception);
+        if($server <> null && $connection <> null && $exception <> null)
+        {
+            handleError($connection,$exception);
+        }
+
     })
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
     {
