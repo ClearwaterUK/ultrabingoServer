@@ -106,6 +106,8 @@ function dropConnectionFromCurrentConnections($connection)
 
     $connectionHash = spl_object_hash($connection);
 
+    print_r($connectionLog);
+
     if(!isset($connectionLog[$connectionHash]))
     {
         echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection doesn't exist in our log...\n");
@@ -123,7 +125,7 @@ function getRoomFromConnection($connection)
     }
     else
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection is not playing a game\n");
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection was not registered?\n");
         return null;
     }
 }

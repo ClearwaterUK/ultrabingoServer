@@ -268,11 +268,8 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     {
         onMessageRecieved($message->getContent(),$connection);
     })
-    ->onError(function ($client, $connection, $exception)
+    ->onError(function ($server, $connection, $exception)
     {
-        var_export($client);
-        var_export($connection);
-        var_export($exception);
         handleError($connection,$exception);
     })
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
