@@ -466,7 +466,7 @@ class GameController
         $dcMessage->disconnectCode = 1001;
         $dcMessage->disconnectMessage = "The host has left the game.";
 
-        $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
+        $em = new EncapsulatedMessage("HostLeftGame",json_encode($dcMessage));
 
         //var_export($game->currentPlayers);
 
