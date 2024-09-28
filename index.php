@@ -17,9 +17,10 @@ $steamIdToUsernameTable = array();
 require_once('functions.php');
 
 //Load all the NetworkMessage classes from the folder
-$networkMessageFolder = glob('./NetworkMessages/*.php');
+$networkMessageFolder = glob(__DIR__.'/NetworkMessages/*.php');
 foreach($networkMessageFolder as $file)
 {
+    echo("Loading ".$file."\n");
     require_once $file;
 }
 
@@ -250,13 +251,13 @@ echo(Color::light_blue(). "Loading environment variables".Color::reset()."\n");
 loadEnvFile();
 
 echo(Color::light_blue() . "Loading level list".Color::reset()."\n");
-require_once ('./levels.php');
+require_once (__DIR__.'/levels.php');
 
 echo(Color::light_blue() . "Initialising DB configuration".Color::reset()."\n");
-require_once ('./DB.php');
+require_once (__DIR__.'/DB.php');
 
 echo(Color::light_blue() . "Starting up game coordinator".Color::reset()."\n");
-require_once('./game.php');
+require_once(__DIR__.'/game.php');
 
 echo(Color::green() . "Starting webserver on port ".$PORT.Color::reset()."\n");
 
