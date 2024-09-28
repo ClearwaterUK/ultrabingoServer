@@ -18,10 +18,12 @@ class JoinRoomResponse
 class JoinRoomNotification
 {
     public $username;
+    public $steamId;
 
-    public function __construct($playerName)
+    public function __construct($playerName,$steamId)
     {
         $this->username = $playerName;
+        $this->steamId = $steamId;
     }
 }
 

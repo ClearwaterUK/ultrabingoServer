@@ -312,7 +312,7 @@ class GameController
             }
 
             //Broadcast the new player joining to everyone else in the current Game.
-            $message = new JoinRoomNotification($playerName);
+            $message = new JoinRoomNotification($playerName,$playerSteamId);
             $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
 
             //Send the message to the client first, then send it to everyone else.

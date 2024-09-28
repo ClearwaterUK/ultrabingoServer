@@ -106,7 +106,7 @@ function dropFromConnectionTable($connection)
 
     if(!isset($connectionLog[$connectionHash]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection doesn't exist in our log...\n");
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection doesn't exist in our log...".\Codedungeon\PHPCliColors\Color::reset()."\n");
     }
 
     unset($connectionLog[$connectionHash]);
