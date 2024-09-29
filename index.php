@@ -71,7 +71,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             else
             {
-                echo("Sending timeout notice to ".$playerObj->username."\n");
+                echo("Sending timeout notice to ".$playerObj->username." that ".$username." dropped\n");
                 $timeoutNotif = new TimeoutNotification($username,$steamId);
                 $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
                 sendEncodedMessage($em,$playerObj->websocketConnection);
