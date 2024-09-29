@@ -428,7 +428,7 @@ class GameController
         }
     }
 
-    public function disconnectPlayer(Int $gameid, string $playername, string $steamId)
+    public function disconnectPlayer(Int $gameid, string $playername, string $steamId, $leavingConnection)
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
@@ -448,21 +448,24 @@ class GameController
             if($playerObj->username == $playername)
             {
                 //Remove the player from the game.
-                sendEncodedMessage($em,$playerObj->websocketConnection);
-                $playerObj->websocketConnection->close(1000,"Closing");
                 $indexToRemove = $playerSteamId;
                 dropFromConnectionTable($playerObj->websocketConnection);
             }
             else
             {
                 //Notify all other players of the player leaving the game.
-                sendEncodedMessage($em2,$playerObj->websocketConnection);
+                //Make sure we're not sending to the player who just left as their connection was closed before removing
+                //on the server-side.
+                if($playerObj->websocketConnection !== $leavingConnection)
+                {
+                    sendEncodedMessage($em2,$playerObj->websocketConnection);
+                }
             }
         }
         unset($game->currentPlayers[$indexToRemove]);
     }
     
-    public function disconnectAllPlayers(Int $gameid)
+    public function disconnectAllPlayers(Int $gameid,$hostConnection)
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
@@ -475,8 +478,13 @@ class GameController
 
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
-            $playerObj->websocketConnection->close(1000,"Closing");
+            //Don't send dc message to the host as they've already DC'd before we clean up the game.
+            if($playerObj->websocketConnection !== $hostConnection)
+            {
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+                $playerObj->websocketConnection->close(1000,"Host has left game");
+            }
+
             dropFromConnectionTable($playerObj->websocketConnection);
             unset($game->currentPlayers[$playerSteamId]);
         }

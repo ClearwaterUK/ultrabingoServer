@@ -181,7 +181,7 @@ function onMessageRecieved($message,$connection)
                 if($checkResult == 1)
                 {
                     //...disconnect all players before deleting the game
-                    $gameCoordinator->disconnectAllPlayers($receivedJson['roomId']);
+                    $gameCoordinator->disconnectAllPlayers($receivedJson['roomId'],$connection);
 
                     //Then delete the game.
                     $gameCoordinator->destroyGame($receivedJson['roomId']);
@@ -246,7 +246,7 @@ function onClientConnect()
     echo("Incoming connection\n");
 }
 
-function onClientDisconnect()
+function onClientDisconnect($server,$connection)
 {
     echo("Client has disconnected\n");
 }
@@ -301,7 +301,7 @@ $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
     })
     ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
     {
-        onClientDisconnect();
+        onClientDisconnect($server,$connection);
     })
     ->start();
 
