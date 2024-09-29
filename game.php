@@ -437,6 +437,7 @@ class GameController
 
         $dcNotification = new DisconnectNotification();
         $dcNotification->username = $playername;
+        $dcNotification->steamId = $steamId;
 
         $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
         $em2 = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));

@@ -9,4 +9,5 @@ class DisconnectSignal
 class DisconnectNotification
 {
     public $username;
+    public $steamId;
 }
