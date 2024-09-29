@@ -128,4 +128,28 @@ function getPlayerFromConnectionTable($connection)
     }
 }
 
+function addToUsernameLookupTable($steamId,$username)
+{
+    global $steamIdToUsernameTable;
+
+    if(isset($steamIdToUsernameTable[$steamId]))
+    {
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID already exists in our log, overwriting\n");
+    }
+
+    $steamIdToUsernameTable[$steamId] = $username;
+}
+
+function dropFromUsernameLookupTable($steamId)
+{
+    global $steamIdToUsernameTable;
+
+    if(!isset($steamIdToUsernameTable[$steamId]))
+    {
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID doesn't exist in our log...".\Codedungeon\PHPCliColors\Color::reset()."\n");
+    }
+
+    unset($steamIdToUsernameTable[$steamId]);
+}
+
 ?>

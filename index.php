@@ -57,6 +57,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
         echo("Player who timed out:".$username);
 
+        print_r($steamIdToUsernameTable);
         $steamId = array_search($username,$steamIdToUsernameTable);
         echo("Associated SteamID: ".$steamId."\n");
 
@@ -112,6 +113,7 @@ function onMessageRecieved($message,$connection)
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
 
                 addToConnectionTable($connection,$roomId,$receivedJson["hostSteamName"]);
+                addToUsernameLookupTable($receivedJson['hostSteamId'],$receivedJson["hostSteamName"]);
             }
             else{
                 echo("Failed to create room for whatever reason\n");
@@ -142,8 +144,9 @@ function onMessageRecieved($message,$connection)
 
             if($status == 0)
             {
-                echo("Adding connection to current connection log\n");
-                addToConnectionTable($connection,$roomId,$receivedJson["username"]);
+                echo("Adding to connection log\n");
+                addToConnectionTable($connection,$roomId,$receivedJson['username']);
+                addToUsernameLookupTable($receivedJson['steamId'],$receivedJson['username']);
             }
 
             break;
