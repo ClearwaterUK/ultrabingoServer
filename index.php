@@ -189,7 +189,7 @@ function onMessageRecieved($message,$connection)
                 //If player is not the host, simply disconnect and remove just the player.
                 else
                 {
-                    $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId']);
+                    $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
                 }
             }
             break;
