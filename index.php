@@ -58,6 +58,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         echo("Player who timed out:".$username);
 
         $steamId = array_search($username,$steamIdToUsernameTable);
+        echo("Associated SteamID: ".$steamId."\n");
 
         $indexToUnset = "";
         //print_r($associatedGame->currentPlayers);
