@@ -318,11 +318,11 @@ class GameController
             //Send the message to the client first, then send it to everyone else.
             //May have to move this til after the player has joined, otherwise the joining player gets the notif firsts and then panics
             //Because game data wasn't sent to them first.
-            sendEncodedMessage($em,$playerConnection);
             foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
             {
                 if($plrSteamId <> $playerSteamId)
                 {
+                    echo("Sending join notif to ".$playerObj->username."\n");
                     sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
