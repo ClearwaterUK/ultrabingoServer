@@ -292,7 +292,7 @@ class GameController
         return $gameToCreate;
     }
 
-    public function joinGame(Int $gameId, string $playerName, string $playerSteamId, WebSocket\Connection $playerConnection)
+    public function joinGame(Int $gameId, string $playerName, string $plrSteamId, WebSocket\Connection $playerConnection)
     {
         // Lookup the game id in the DB and see if it exists.
         $gameLookup = lookForGame($gameId);
@@ -312,22 +312,24 @@ class GameController
             }
 
             //Broadcast the new player joining to everyone else in the current Game.
-            $message = new JoinRoomNotification($playerName,$playerSteamId);
+            $message = new JoinRoomNotification($playerName,$plrSteamId);
             $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
 
             //Send the message to the client first, then send it to everyone else.
+            //May have to move this til after the player has joined, otherwise the joining player gets the notif firsts and then panics
+            //Because game data wasn't sent to them first.
             sendEncodedMessage($em,$playerConnection);
-            foreach($this->currentGames[$gameId]->currentPlayers as &$player)
+            foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
             {
-                if($player->username <> $playerName)
+                if($plrSteamId <> $playerSteamId)
                 {
-                    sendEncodedMessage($em,$player->websocketConnection);
+                    sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
 
             //Add the new player to the player list of the Game.
-            $playerToAdd = new GamePlayer($playerName,$playerSteamId,$playerConnection);
-            $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$playerSteamId);
+            $playerToAdd = new GamePlayer($playerName,$plrSteamId,$playerConnection);
+            $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$plrSteamId);
             return $this->currentGames[$gameId];
         }
         else
