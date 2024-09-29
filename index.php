@@ -50,9 +50,12 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
     $gameDetails = getPlayerFromConnectionTable($connection);
     if($gameDetails != null)
     {
+        print_r($gameDetails);
         //Go into the room id
         $associatedGame = $gameCoordinator->currentGames[$gameDetails[0]];
         $username = $gameDetails[1];
+
+        echo("Player who timed out:".$username);
 
         $steamId = array_search($username,$steamIdToUsernameTable);
 
