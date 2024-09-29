@@ -40,6 +40,7 @@ function sendEncodedMessage($messageToSend,$connection)
 function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception)
 {
     global $gameCoordinator;
+    global $steamIdToUsernameTable;
 
     echo(Color::RED() . "Client was dropped - lost connection or alt-f4'd?" . Color::reset() . "\n");
 
@@ -53,6 +54,8 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         $associatedGame = $gameCoordinator->currentGames[$gameDetails[0]];
         $username = $gameDetails[1];
 
+        $steamId = array_search($username,$steamIdToUsernameTable);
+
         $indexToUnset = "";
         //print_r($associatedGame->currentPlayers);
         foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
@@ -64,7 +67,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             else
             {
                 echo("Sending timeout notice to ".$playerObj->username."\n");
-                $timeoutNotif = new TimeoutNotification($username);
+                $timeoutNotif = new TimeoutNotification($username,$steamId);
                 $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
                 sendEncodedMessage($em,$playerObj->websocketConnection);
             }
