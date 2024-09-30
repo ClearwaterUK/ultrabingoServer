@@ -137,8 +137,6 @@ class Game
 
     public $gameState; //Current state of the game, represented by GameState enum.
 
-    public $criteriaType; //What criteria? 1 = time, 2 = style.
-
     public $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
 
     public $gameSettings; //Settings for the game, represented by a GameSettings object.
@@ -148,8 +146,6 @@ class Game
         $this->currentPlayers = [];
         $this->grid = [];
         $this->gameId = $gameId;
-
-        $this->criteriaType = 1; //Time only for now, will add style support later
 
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
         $host = new GamePlayer($hostSteamName,$hostSteamId,$hostConnection);
@@ -570,10 +566,11 @@ class GameController
         }
         else
         {
+            echo("Gametype:".$currentGame->gameSettings->gameType);
             echo("Current level requirement is " . $levelInCard->timeToBeat . "\n");
             echo("Submitted time was " . $submissionData['time'] . "\n");
             var_export($submissionData['time'] < $levelInCard->timeToBeat);
-            if(($currentGame->criteriaType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->criteriaType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
+            if(($currentGame->gameSettings->gameType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->gameSettings->gameType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
             {
                 //Same team/person
                 if($levelInCard->claimedBy == Team::tryFrom($submissionData['team']))
