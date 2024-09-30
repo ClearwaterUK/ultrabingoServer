@@ -570,6 +570,9 @@ class GameController
         }
         else
         {
+            echo("Current level requirement is " . $levelInCard->timeToBeat . "\n");
+            echo("Submitted time was " . $submissionData['time'] . "\n");
+            var_export($submissionData['time'] < $levelInCard->timeToBeat);
             if(($currentGame->criteriaType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->criteriaType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
             {
                 //Same team/person
