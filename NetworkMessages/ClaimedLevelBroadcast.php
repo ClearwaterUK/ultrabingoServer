@@ -11,7 +11,10 @@ class ClaimedLevelBroadcast
     public $row;
     public $column;
 
-    public function __construct($username,$team,$levelname,$claimType,$row,$column)
+    public $newTimeRequirement;
+    public $newStyleRequirement;
+
+    public function __construct($username,$team,$levelname,$claimType,$row,$column,$time,$style)
     {
         $this->username = $username;
         $this->team = $team;
@@ -21,7 +24,8 @@ class ClaimedLevelBroadcast
         $this->row = $row;
         $this->column = $column;
 
-
+        $this->newTimeRequirement = $time;
+        $this->newStyleRequirement = $style;
     }
 }
 
