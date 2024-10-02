@@ -114,6 +114,7 @@ class GameSettings
     public $requiresPRank;
     public $gameType;
     public $difficulty;
+    public $levelRotation;
 
     public function __construct()
     {
@@ -122,6 +123,7 @@ class GameSettings
         $this->requiresPRank = false;
         $this->gameType = 0; //Time by default
         $this->difficulty = 0; //Harmless by default
+        $this->levelRotation = 0; //Campaign only by default
     }
 }
 
@@ -346,10 +348,11 @@ class GameController
             $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
+            $newSettings->levelRotation = $settings['levelRotation'];
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
             echo("Notifying all non-host players of changed settings\n");
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty']);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation']);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             foreach($gameToUpdate->currentPlayers as $playerSteamId => &$playerObj)
