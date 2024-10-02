@@ -157,7 +157,7 @@ class Game
         $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
-        //$this->grid = new GameGrid(3);
+        $this->grid = new GameGrid(3);
 
         $this->gameState = GameState::inLobby;
     }
@@ -278,7 +278,7 @@ class Game
 
     public function generateGrid($size=3)
     {
-        $this->grid = new GameGrid($size);
+        //$this->grid = new GameGrid($size);
     }
 }
 
