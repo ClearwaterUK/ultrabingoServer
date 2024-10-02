@@ -157,7 +157,7 @@ class Game
         $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
-        $this->grid = new GameGrid(3);
+        //$this->grid = new GameGrid(3);
 
         $this->gameState = GameState::inLobby;
     }
@@ -275,6 +275,11 @@ class Game
         echo("Here are our teams:\n");
         var_export($this->teams);
     }
+
+    public function generateGrid($size=3)
+    {
+        $this->grid = new GameGrid($size);
+    }
 }
 
 class GameController
@@ -380,12 +385,14 @@ class GameController
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
 
+            $gameToStart->generateGrid();
+
             //Send the game start signal to all players in the game
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
                 echo("Telling client ".$playerObj->username."(".$playerObj->steamId.") to start\n");
 
-                $startSignal = new StartGameSignal($playerObj->team,$gameToStart->teams[$playerObj->team]);
+                $startSignal = new StartGameSignal($playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
 
                 $message = new EncapsulatedMessage("StartGame",json_encode($startSignal));
                 sendEncodedMessage($message,$playerObj->websocketConnection);
