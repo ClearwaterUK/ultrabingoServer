@@ -158,8 +158,8 @@ class Game
         //Set the default settings.
         $this->gameSettings = new GameSettings();
 
-        //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
-        $this->grid = new GameGrid($this->gameSettings->gridSize+3);
+        //Pre-generate the grid of levels. (NOTE: switching to dynamic generation, delete this)
+        //$this->grid = new GameGrid($this->gameSettings->gridSize+3);
 
         $this->gameState = GameState::inLobby;
     }
@@ -389,7 +389,7 @@ class GameController
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
 
-            echo("Constructing grid of size ".$gameToStart->gameSettings->gridSize."x".$gameToStart->gameSettings->gridSize."\n");
+            echo("Constructing grid of size ".($gameToStart->gameSettings->gridSize+3)."x".($gameToStart->gameSettings->gridSize+3)."\n");
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize);
 
             //Send the game start signal to all players in the game
