@@ -389,7 +389,7 @@ class GameController
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
 
-            $gameToStart->generateGrid();
+            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize);
 
             //Send the game start signal to all players in the game
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
