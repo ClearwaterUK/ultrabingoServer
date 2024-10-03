@@ -159,7 +159,7 @@ class Game
         $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels. (NOTE: switching to dynamic generation, delete this)
-        //$this->grid = new GameGrid($this->gameSettings->gridSize+3);
+        $this->grid = new GameGrid($this->gameSettings->gridSize+3);
 
         $this->gameState = GameState::inLobby;
     }
