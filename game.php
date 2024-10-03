@@ -280,7 +280,7 @@ class Game
 
     public function generateGrid($size=3)
     {
-        //$this->grid = new GameGrid($size);
+        $this->grid = new GameGrid($size);
     }
 }
 
