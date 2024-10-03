@@ -359,6 +359,7 @@ class GameController
             $newSettings->gridSize = $settings['gridSize'];
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
+            echo("Grid size is now raw ".$newSettings->gridSize."\n");
             echo("Notifying all non-host players of changed settings\n");
             $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize']);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
