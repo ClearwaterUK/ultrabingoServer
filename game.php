@@ -79,7 +79,7 @@ class GameGrid
     public function __construct($size=3)
     {
         $this->size = $size;
-        echo("Constructing grid\n");
+        echo("Constructing grid of size ".$size."x".$size."\n");
         $this->populateGrid();
         echo("Grid made\n");
         //var_export($this->levelTable);
@@ -115,6 +115,7 @@ class GameSettings
     public $gameType;
     public $difficulty;
     public $levelRotation;
+    public $gridSize;
 
     public function __construct()
     {
@@ -124,6 +125,7 @@ class GameSettings
         $this->gameType = 0; //Time by default
         $this->difficulty = 0; //Harmless by default
         $this->levelRotation = 0; //Campaign only by default
+        $this->gridSize = 0; // 3x3 by default
     }
 }
 
@@ -157,7 +159,7 @@ class Game
         $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels. (3x3 for now, will move to larger grids in future)
-        $this->grid = new GameGrid(3);
+        $this->grid = new GameGrid($this->gameSettings->gridSize+3);
 
         $this->gameState = GameState::inLobby;
     }
@@ -354,10 +356,11 @@ class GameController
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->levelRotation = $settings['levelRotation'];
+            $newSettings->gridSize = $settings['gridSize'];
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
             echo("Notifying all non-host players of changed settings\n");
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation']);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize']);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             foreach($gameToUpdate->currentPlayers as $playerSteamId => &$playerObj)
