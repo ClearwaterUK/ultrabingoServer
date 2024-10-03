@@ -390,7 +390,7 @@ class GameController
             $gameToStart->gameState = GameState::inGame;
 
             echo("Constructing grid of size ".($gameToStart->gameSettings->gridSize+3)."x".($gameToStart->gameSettings->gridSize+3)."\n");
-            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize);
+            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
 
             //Send the game start signal to all players in the game
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
