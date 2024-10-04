@@ -38,15 +38,24 @@ class GameLevel
     public $row;
     public $column;
 
-    public function __construct($level,$row,$column)
+    //Relevant data if the level is an Angry custom level.
+    public $isAngryLevel;
+    public $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
+    public $angryLevelId;
+
+    public function __construct($levelName, $row, $column, $isAngryLevel, $angryParentBundle,$angryLevelId)
     {
-        $this->levelName = $level;
+        $this->levelName = $levelName;
         $this->claimedBy = Team::NONE;
         $this->personToBeat = "";
         $this->timeToBeat = 0;
         $this->styleToBeat = 0;
         $this->row = $row;
         $this->column = $column;
+
+        $this->isAngryLevel = $isAngryLevel;
+        $this->angryParentBundle = $angryParentBundle;
+        $this->angryLevelId = $angryLevelId;
     }
 }
 
@@ -57,11 +66,40 @@ class GameGrid
 
     public $levelTable; //Array containing the level id and the associated coordinates on the grid.
 
-    public function populateGrid()
+    public function populateGrid($levelPoolSetting=0)
     {
         global $levels;
-        $levelList = $levels;
 
+        global $campaignLevels;
+        global $angryLevels;
+
+        $levelPool = array();
+
+        switch($levelPoolSetting)
+        {
+            case 0: {echo("Using campaign levels only\n"); $levelPool = $campaignLevels; break;}
+            case 1: {echo("Using Angry levels only\n"); $levelPool = $angryLevels;  break;}
+            case 2: {echo("Using campaign and Angry levels \n"); $levelPool = array_merge($campaignLevels,$angryLevels); break;}
+        }
+
+        for($x = 0; $x <= $this->size-1; $x++)
+        {
+            for($y = 0; $y <= $this->size-1; $y++)
+            {
+                //Pick a level from our level list, set it, and then remove to prevent duplicates
+                $selectedIndex = array_rand($levelPool);
+                $levelObj = $levelPool[$selectedIndex];
+
+                $levelToInsert = new GameLevel($levelObj->levelName,$x,$x,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
+
+                //$levelToInsert = new GameLevel($rand,$x,$y);
+                $this->levelTable[$x."-".$y] = $levelToInsert;
+                unset($levelPool[$selectedIndex]);
+            }
+        }
+
+        //Old grid gen code
+        /*$levelList = $levels;
         for($x = 0; $x <= $this->size-1; $x++)
         {
             for($y = 0; $y <= $this->size-1; $y++)
@@ -73,14 +111,14 @@ class GameGrid
                 $this->levelTable[$x."-".$y] = $levelToInsert;
                 unset($levelList[$selectedIndex]);
             }
-        }
+        }*/
     }
 
-    public function __construct($size=3)
+    public function __construct($size=3,$levelRotation=0)
     {
         $this->size = $size;
         echo("Constructing grid of size ".$size."x".$size."\n");
-        $this->populateGrid();
+        $this->populateGrid($levelRotation);
         echo("Grid made\n");
         //var_export($this->levelTable);
     }
@@ -280,7 +318,7 @@ class Game
 
     public function generateGrid($size=3)
     {
-        $this->grid = new GameGrid($size);
+        $this->grid = new GameGrid($size,$this->gameSettings->levelRotation);
     }
 }
 
