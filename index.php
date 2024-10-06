@@ -29,7 +29,7 @@ function decodeMessage($message)
     return json_decode(base64_decode($message),true);
 }
 
-function sendEncodedMessage($messageToSend,$connection)
+function sendEncodedMessage($messageToSend,$connection):void
 {
     $encodedMessage = base64_encode(json_encode($messageToSend));
     //echo("Sending base64 message:\n");
@@ -37,7 +37,7 @@ function sendEncodedMessage($messageToSend,$connection)
     $connection->text($encodedMessage);
 }
 
-function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception)
+function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception):void
 {
     global $gameCoordinator;
     global $steamIdToUsernameTable;
@@ -82,33 +82,25 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
     dropFromConnectionTable($connection);
 }
 
-function onMessageRecieved($message,$connection)
+function onMessageRecieved($message,$connection):void
 {
     global $gameCoordinator;
-    global $connectionLog;
-
-    echo("Incoming message\n");
 
     $receivedJson = decodeMessage($message);
     $messageType = $receivedJson["messageType"];
-    echo($messageType."\n");
-
     switch($messageType)
     {
         case "CreateRoom":
         {
             echo("Received request to create room\n");
             $roomId = createRoomInDatabase($receivedJson);
-            $status = "";
-            $game = "";
+
             if($roomId <> null && $roomId <> 0)
             {
                 //Create the room
-                echo("Room created in DB, got room id: ".$roomId."\n");
                 $status = "ok";
-                echo("Setting up game ".$roomId." in game coordinator\n");
                 $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
-                echo("Game created\n");
+                echo("Game created and set up with id ".$roomId."\n");
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
 
@@ -116,7 +108,7 @@ function onMessageRecieved($message,$connection)
                 addToUsernameLookupTable($receivedJson['hostSteamId'],$receivedJson["hostSteamName"]);
             }
             else{
-                echo("Failed to create room for whatever reason\n");
+                echo("Failed to create room!\n");
                 $status = "err";
                 $crr = new CreateRoomResponse($status,$roomId);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
@@ -124,13 +116,12 @@ function onMessageRecieved($message,$connection)
 
             //Send back the response to the client
             sendEncodedMessage($em,$connection);
-
             break;
         }
 
         case "JoinRoom":
         {
-            echo("Recieved request to join room id ".$receivedJson['roomId']."\n");
+            echo($receivedJson['username']." wants to join game ".$receivedJson['roomId']."\n");
 
             $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
 
@@ -148,27 +139,26 @@ function onMessageRecieved($message,$connection)
                 addToConnectionTable($connection,$roomId,$receivedJson['username']);
                 addToUsernameLookupTable($receivedJson['steamId'],$receivedJson['username']);
             }
-
             break;
         }
 
         case "UpdateRoomSettings":
         {
-            echo("Recieved update room settings signal for room id ".$receivedJson['roomId']."\n");
+            echo("Updating settings for room ".$receivedJson['roomId']."\n");
             $gameCoordinator->updateGameSettings($receivedJson);
             break;
         }
 
         case "StartGame":
         {
-            echo("Recieved request to start game id ".$receivedJson['roomId']."\n");
+            echo("Starting game ".$receivedJson['roomId']."\n");
             $gameCoordinator->startGame($receivedJson['roomId']);
             break;
         }
 
         case "LeaveGame":
         {
-            echo("Client wants to leave game id ".$receivedJson['roomId']." \n");
+            echo("Player wants to leave game ".$receivedJson['roomId']." \n");
             $checkResult = $gameCoordinator->checkPlayerBeforeRemoving($receivedJson['username'],$receivedJson['roomId'],$receivedJson['steamId']);
             if($checkResult < 0)
             {
@@ -198,7 +188,7 @@ function onMessageRecieved($message,$connection)
         case "SubmitRun":
         {
             $gameId = $receivedJson['gameId'];
-            echo("Recieved submission request for game id ".$receivedJson['gameId']."\n");
+            echo("Player is submitting run in game ".$receivedJson['gameId']."\n");
             if($gameCoordinator->verifyRunSubmission($receivedJson))
             {
                 $submitResult = $gameCoordinator->submitRun($receivedJson);
@@ -207,6 +197,16 @@ function onMessageRecieved($message,$connection)
                     //Check if the claimed level resulted in a bingo.
                     $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
 
+                    $levelDisplayName = $gameCoordinator->currentGames[$gameId]->grid->levelTable[$receivedJson['row']."-".$receivedJson['column']]->levelName;
+
+                    $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
+
+                    foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
+                    {
+                        $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
+                        echo("Sending level claim msg to ".$playerObj->username."\n");
+                        sendEncodedMessage($message,$playerObj->websocketConnection);
+                    }
                     if($hasObtainedBingo)
                     {
                         $bingoSignal = new EndGameSignal($receivedJson['team']);
@@ -214,17 +214,6 @@ function onMessageRecieved($message,$connection)
                         {
                             $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
                             echo("Sending end game signal to ".$playerObj->username."\n");
-                            sendEncodedMessage($message,$playerObj->websocketConnection);
-                        }
-                    }
-                    else
-                    {
-                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$receivedJson['mapName'],$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
-
-                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
-                        {
-                            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                            echo("Sending level claim msg to ".$playerObj->username."\n");
                             sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
                     }
@@ -241,17 +230,17 @@ function onMessageRecieved($message,$connection)
     }
 }
 
-function onClientConnect()
+function onClientConnect():void
 {
-    echo("Incoming connection\n");
+    echo("New connection\n");
 }
 
-function onClientDisconnect($server,$connection)
+function onClientDisconnect($server,$connection):void
 {
     echo("Client has disconnected\n");
 }
 
-function loadEnvFile()
+function loadEnvFile():void
 {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
@@ -272,38 +261,36 @@ require_once(__DIR__.'/game.php');
 echo(Color::green() . "Starting webserver on port ".$PORT.Color::reset()."\n");
 
 $server = new WebSocket\Server($PORT,false);
-$server->addMiddleware(new WebSocket\Middleware\CloseHandler())
-    ->addMiddleware(new WebSocket\Middleware\PingResponder())
-    ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
-    ->setTimeout($TIMEOUT)
-    ->onConnect(function()
-    {
-        onClientConnect();
-    })
-    ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message)
-    {
-        onMessageRecieved($message->getContent(),$connection);
-    })
-    ->onPing(function ($client, $connection, $message)
-    {
-        $pong = new Pong();
-        $em = new EncapsulatedMessage("Pong",json_encode($pong));
-        sendEncodedMessage($em,$connection);
-    })
+try {
+    $server->addMiddleware(new WebSocket\Middleware\CloseHandler())
+        ->addMiddleware(new WebSocket\Middleware\PingResponder())
+        ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
+        ->setTimeout($TIMEOUT)
+        ->onConnect(function () {
+            onClientConnect();
+        })
+        ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
+            onMessageRecieved($message->getContent(), $connection);
+        })
+        ->onPing(function ($client, $connection, $message) {
+            $pong = new Pong();
+            $em = new EncapsulatedMessage("Pong", json_encode($pong));
+            sendEncodedMessage($em, $connection);
+        })
+        ->onError(function ($server, $connection, $exception) {
+            if ($server <> null && $connection <> null && $exception <> null) {
+                handleError($connection, $exception);
+            }
 
-    ->onError(function ($server, $connection, $exception)
-    {
-        if($server <> null && $connection <> null && $exception <> null)
-        {
-            handleError($connection,$exception);
-        }
-
-    })
-    ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection)
-    {
-        onClientDisconnect($server,$connection);
-    })
-    ->start();
+        })
+        ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
+            onClientDisconnect($server, $connection);
+        })
+        ->start();
+} catch (Throwable $e) {
+    echo(Color::red() . "Server error!".Color::reset()."\n");
+    echo($e->getMessage()."\n");
+}
 
 
 ?>

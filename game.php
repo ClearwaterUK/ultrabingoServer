@@ -24,32 +24,37 @@ enum Team: string
     case GREEN = "Green";
 }
 
-
 //Represents a level in the Game grid of levels.
 class GameLevel
 {
-    public $levelName;
+    public string $levelName;
+    public string $levelId;
+
+    //Data relating to which team has claimed the level and requirements to beat it.
     public $claimedBy; //The team that currently claims the level. Can be any color or "None to signify not claimed yet.
-    public $personToBeat;
-    public $timeToBeat;
-    public $styleToBeat;
+    public string $personToBeat;
+    public float $timeToBeat;
+    public float $styleToBeat;
 
     //Coordinates in the GameGrid.
-    public $row;
-    public $column;
+    public int $row;
+    public int $column;
 
     //Relevant data if the level is an Angry custom level.
-    public $isAngryLevel;
-    public $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
-    public $angryLevelId;
+    public bool $isAngryLevel;
+    public string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
+    public string $angryLevelId;
 
-    public function __construct($levelName, $row, $column, $isAngryLevel, $angryParentBundle,$angryLevelId)
+    public function __construct($levelDisplayName,$levelId,$row,$column,$isAngryLevel,$angryParentBundle,$angryLevelId)
     {
-        $this->levelName = $levelName;
+        $this->levelName = $levelDisplayName;
+        $this->levelId = $levelId;
+
         $this->claimedBy = Team::NONE;
         $this->personToBeat = "";
         $this->timeToBeat = 0;
         $this->styleToBeat = 0;
+
         $this->row = $row;
         $this->column = $column;
 
@@ -62,14 +67,12 @@ class GameLevel
 //Represents the grid of levels selected to be played in a game.
 class GameGrid
 {
-    public $size; //We'll only do 3x3 for now for testing, but will have to bump up to 5x5
+    public int $size; //We'll only do 3x3 for now for testing, but will have to bump up to 5x5
 
-    public $levelTable; //Array containing the level id and the associated coordinates on the grid.
+    public array $levelTable; //Array containing the level id and the associated coordinates on the grid.
 
-    public function populateGrid($levelPoolSetting=0)
+    public function populateGrid($levelPoolSetting=0):void
     {
-        global $levels;
-
         global $campaignLevels;
         global $angryLevels;
 
@@ -90,28 +93,13 @@ class GameGrid
                 $selectedIndex = array_rand($levelPool);
                 $levelObj = $levelPool[$selectedIndex];
 
-                $levelToInsert = new GameLevel($levelObj->levelName,$x,$x,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
+                $levelToInsert = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$x,$y,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
 
                 //$levelToInsert = new GameLevel($rand,$x,$y);
                 $this->levelTable[$x."-".$y] = $levelToInsert;
                 unset($levelPool[$selectedIndex]);
             }
         }
-
-        //Old grid gen code
-        /*$levelList = $levels;
-        for($x = 0; $x <= $this->size-1; $x++)
-        {
-            for($y = 0; $y <= $this->size-1; $y++)
-            {
-                //Pick a level from our level list, set it, and then remove to prevent duplicates
-                $selectedIndex = array_rand($levelList);
-                $rand = $levelList[$selectedIndex];
-                $levelToInsert = new GameLevel($rand,$x,$y);
-                $this->levelTable[$x."-".$y] = $levelToInsert;
-                unset($levelList[$selectedIndex]);
-            }
-        }*/
     }
 
     public function __construct($size=3,$levelRotation=0)
@@ -120,16 +108,15 @@ class GameGrid
         echo("Constructing grid of size ".$size."x".$size."\n");
         $this->populateGrid($levelRotation);
         echo("Grid made\n");
-        //var_export($this->levelTable);
     }
 }
 
 //Represents a player currently connected to a game.
 class GamePlayer
 {
-    public $steamId;
-    public $username;
-    public $websocketConnection;
+    public string $steamId;
+    public string $username;
+    public \WebSocket\Connection $websocketConnection;
     public $team;
 
     public function __construct($playerName,$playerSteamId,$playerConnection)
@@ -138,22 +125,17 @@ class GamePlayer
         $this->websocketConnection = $playerConnection;
         $this->steamId = $playerSteamId;
     }
-
-    public function setTeam($team)
-    {
-
-    }
 }
 
 class GameSettings
 {
-    public $maxPlayers;
-    public $maxTeams;
-    public $requiresPRank;
-    public $gameType;
-    public $difficulty;
-    public $levelRotation;
-    public $gridSize;
+    public int $maxPlayers;
+    public int $maxTeams;
+    public bool $requiresPRank;
+    public int $gameType;
+    public int $difficulty;
+    public int $levelRotation;
+    public int $gridSize;
 
     public function __construct()
     {
@@ -169,19 +151,19 @@ class GameSettings
 
 class Game
 {
-    public $gameId;
+    public int $gameId; //Game ID, represented by a number.
 
-    public $currentPlayers; //List of players. Each player is represented via a <SteamID,GamePlayer> format.
+    public array $currentPlayers; //List of players. Each player is represented via a <SteamID,GamePlayer> format.
 
     public $grid; //Our NxN bingo grid.
 
-    public $gameHost; //The player who is hosting the game. Represented by a string containing the SteamID of the host.
+    public string $gameHost; //The player who is hosting the game. Represented by a string containing the SteamID of the host.
 
-    public $gameState; //Current state of the game, represented by GameState enum.
+    public GameState $gameState; //Current state of the game, represented by GameState enum.
 
-    public $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
+    public array $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
 
-    public $gameSettings; //Settings for the game, represented by a GameSettings object.
+    public GameSettings $gameSettings; //Settings for the game, represented by a GameSettings object.
 
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
@@ -196,7 +178,7 @@ class Game
         //Set the default settings.
         $this->gameSettings = new GameSettings();
 
-        //Pre-generate the grid of levels. (NOTE: switching to dynamic generation, delete this)
+        //Pre-generate the grid of levels, pending a new dynamic generation on game start.
         $this->grid = new GameGrid($this->gameSettings->gridSize+3);
 
         $this->gameState = GameState::inLobby;
@@ -207,8 +189,6 @@ class Game
     // $isHost: Bool indicating if the $player being added is the host.
     public function addPlayerToGame(GamePlayer $player, string $playerSteamId, bool $isHost=false): void
     {
-        //Because PHP likes to autoconvert SteamIDs to int, resulting in loss of data when accessed later, we prepend
-        // something to it to forcibly store it as a string. Later we cut out the prepended token when accessing.
         echo("Adding player ".$player->username. " to game ".$this->gameId."\n");
 
         $this->currentPlayers[$playerSteamId] = $player;
@@ -219,26 +199,29 @@ class Game
     }
 
     //Removes a player from the specified game.
-    public function removePlayerFromGame($player)
+    //$playerSteamId: The SteamID of the player to remove.
+    public function removePlayerFromGame($playerSteamId):void
     {
-        unset($this->currentPlayers[$player]);
+        unset($this->currentPlayers[$playerSteamId]);
     }
 
-    public function putPlayerInTeam($player,$teamColor)
+    public function putPlayerInTeam($player,$teamColor):void
     {
         global $teamPointers;
 
         array_push($this->teams[$teamPointers[$teamColor]],$player);
     }
 
-    public function checkForBingo($team,$coordX,$coordY)
+    //Check if a team has obtained a bingo in the game grid.
+    //$team: The team color to check.
+    //$coordX: The row to check.
+    //$coordY: The column to check.
+    public function checkForBingo($team,$coordX,$coordY):bool
     {
         $horizontal = true;
         $vertical = true;
         $diagonalDown = true;
         $diagonalUp = true;
-
-
         $teamCol = Team::tryFrom($team);
 
         //Horizontal check
@@ -286,7 +269,6 @@ class Game
         {
             echo("WE GOT A BINGO!!\n");
         }
-
         return($horizontal || $vertical || $diagonalUp || $diagonalDown);
     }
 
@@ -316,7 +298,7 @@ class Game
         var_export($this->teams);
     }
 
-    public function generateGrid($size=3)
+    public function generateGrid($size=3):void
     {
         $this->grid = new GameGrid($size,$this->gameSettings->levelRotation);
     }
@@ -324,7 +306,7 @@ class Game
 
 class GameController
 {
-    public $currentGames; //A list of current game's that are ongoing. Each entry is represented by an id and an associated Game object.
+    public array $currentGames; //A list of current game's that are ongoing. Each entry is represented by an id and an associated Game object.
 
     public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId)
     {
@@ -381,7 +363,7 @@ class GameController
         }
     }
 
-    public function updateGameSettings($settings)
+    public function updateGameSettings($settings):void
     {
         if(array_key_exists($settings['roomId'],$this->currentGames))
         {
@@ -409,16 +391,14 @@ class GameController
                     sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
-            return;
         }
         else
         {
             echo("Trying to update settings for game id ".$settings['roomId']." but doesn't exist!`\n");
-            return;
         }
     }
 
-    public function startGame(Int $gameId)
+    public function startGame(Int $gameId):void
     {
         if(array_key_exists($gameId,$this->currentGames))
         {
@@ -427,6 +407,7 @@ class GameController
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
 
+            echo("Level pool is ".$gameToStart->gameSettings->levelRotation);
             echo("Constructing grid of size ".($gameToStart->gameSettings->gridSize+3)."x".($gameToStart->gameSettings->gridSize+3)."\n");
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
 
@@ -447,7 +428,7 @@ class GameController
         }
     }
 
-    public function checkPlayerBeforeRemoving(string $username, Int $gameId, string $steamId)
+    public function checkPlayerBeforeRemoving(string $username, Int $gameId, string $steamId):int
     {
         if(array_key_exists($gameId,$this->currentGames))
         {
@@ -477,7 +458,7 @@ class GameController
         }
     }
 
-    public function disconnectPlayer(Int $gameid, string $playername, string $steamId, $leavingConnection)
+    public function disconnectPlayer(Int $gameid, string $playername, string $steamId, $leavingConnection):void
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
@@ -503,8 +484,6 @@ class GameController
             else
             {
                 //Notify all other players of the player leaving the game.
-                //Make sure we're not sending to the player who just left as their connection was closed before removing
-                //on the server-side.
                 if($playerObj->websocketConnection !== $leavingConnection)
                 {
                     sendEncodedMessage($em2,$playerObj->websocketConnection);
@@ -514,7 +493,7 @@ class GameController
         unset($game->currentPlayers[$indexToRemove]);
     }
     
-    public function disconnectAllPlayers(Int $gameid,$hostConnection)
+    public function disconnectAllPlayers(Int $gameid,$hostConnection):void
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
@@ -539,7 +518,7 @@ class GameController
         }
     }
 
-    public function destroyGame(Int $gameId)
+    public function destroyGame(Int $gameId):void
     {
         echo("Destroying game id ".$gameId . " from game coordinator\n");
         unset($this->currentGames[$gameId]);
@@ -552,40 +531,36 @@ class GameController
         $gameId = $submissionData['gameId'];
         if(array_key_exists($gameId,$this->currentGames))
         {
-            echo("Game found in current list\n");
             $currentGame = $this->currentGames[$gameId];
             // Check if the player is connected to the currently connected game.
             foreach($currentGame->currentPlayers as $playerSteamId => &$player)
             {
-                echo($playerSteamId."\n");
                 if($playerSteamId == $submissionData['steamId'])
                 {
-                    echo("Found our player's SteamID\n");
                     $submittedCoords = $submissionData['row']."-".$submissionData['column'];
 
-                    echo("Player is submitting at position ".$submittedCoords." which in our current card is ".$currentGame->grid->levelTable[$submittedCoords]->levelName."\n");
+                    echo("Player is submitting at position ".$submittedCoords." which in our current card, level ID is ".$currentGame->grid->levelTable[$submittedCoords]->levelId."\n");
 
                     //Check that the submitted coords match.
                     $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-                    if($levelInCard->levelName == $submissionData['mapName'])
+                    if($levelInCard->levelId == $submissionData['levelId'])
                     {
-                        echo("Level name matches, pre-submission all validated\n");
+                        echo("Level ID matches, pre-submission all validated\n");
                         return true;
                     }
                     else
                     {
-                        echo("Level name doesn't match!\n");
+                        echo("Level ID doesn't match!\n");
                         return false;
                     }
                 }
             }
             echo("Couldn't find the player SteamID in the game's roster!\n");
-            return false;
         }
         else{
             echo("Room id " .$gameId. " was not found in list of current games\n");
-            return false;
         }
+        return false;
     }
 
     /*
@@ -595,10 +570,8 @@ class GameController
      * 1: Submission improved an already claimed map
      * 2: Submission beat criteria
      */
-    public function submitRun($submissionData)
+    public function submitRun($submissionData):int
     {
-        global $gameCoordinator;
-
         $submittedCoords = $submissionData['row']."-".$submissionData['column'];
         $gameId = $submissionData['gameId'];
         $currentGame = $this->currentGames[$gameId];
@@ -609,7 +582,6 @@ class GameController
         if($levelInCard->claimedBy == Team::NONE)
         {
             echo("Level is unclaimed, claiming for their team\n");
-
             $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
             $levelInCard->personToBeat = $submissionData['playerName'];
             $levelInCard->timeToBeat = $submissionData['time'];
@@ -619,10 +591,6 @@ class GameController
         }
         else
         {
-            echo("Gametype:".$currentGame->gameSettings->gameType);
-            echo("Current level requirement is " . $levelInCard->timeToBeat . "\n");
-            echo("Submitted time was " . $submissionData['time'] . "\n");
-            var_export($submissionData['time'] < $levelInCard->timeToBeat);
             if(($currentGame->gameSettings->gameType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->gameSettings->gameType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
             {
                 //Same team/person
@@ -637,11 +605,11 @@ class GameController
                 }
                 else
                 {
+                    echo("Reclaiming level from previous team\n");
                     $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
                     $levelInCard->styleToBeat = $submissionData['style'];
-                    echo("Claiming level from another team\n");
                     return 2;
                 }
             }
