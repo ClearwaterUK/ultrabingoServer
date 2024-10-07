@@ -623,8 +623,9 @@ class GameController
     public function humiliatePlayer($gameId,$steamId)
     {
         $currentGame = $this->currentGames[$gameId];
+        var_export($currentGame);
         $playerToHumil = $currentGame->currentPlayers[$steamId]->username;
-
+        var_export($playerToHumil);
         foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
             if ($playerSteamId != $steamId) {
                 $message = new HumiliationMessage($playerToHumil);
