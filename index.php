@@ -239,14 +239,14 @@ function onMessageRecieved($message,$connection):void
             }
             break;
         }
-        case "CheatNotification":
+        case "CheatActivation":
         {
             $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
             break;
         }
 
 
-        default: {echo "Unknown message, discarding\n"; break;}
+        default: {echo "Unknown message: ".$receivedJson['messageType']."\n"; break;}
     }
 }
 
