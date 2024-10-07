@@ -627,7 +627,7 @@ class GameController
 
         foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
             if ($playerSteamId != $steamId) {
-                $message = new HumilationMessage($playerToHumil);
+                $message = new HumiliationMessage($playerToHumil);
                 $em = new EncapsulatedMessage("CheatNotification",json_encode($message));
                 sendEncodedMessage($em,$playerObj->websocketConnection);
             }
