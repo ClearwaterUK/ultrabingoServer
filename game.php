@@ -620,6 +620,21 @@ class GameController
         }
     }
 
+    public function humiliatePlayer($gameId,$username,$steamId)
+    {
+        $currentGame = $this->currentGames[$gameId];
+        $playerToHumil = $currentGame->currentPlayers[$steamId]->username;
+
+        foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
+            if ($playerSteamId != $steamId) {
+                $message = new HumilationMessage($playerToHumil);
+                $em = new EncapsulatedMessage("CheatNotification",json_encode($message));
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+            }
+        }
+
+    }
+
     public function __construct()
     {
         echo("Game coordinator started at: ".date("Y-m-d h:i:s")."\n");

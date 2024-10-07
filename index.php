@@ -60,14 +60,14 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         print_r($steamIdToUsernameTable);
         $steamId = array_search($username,$steamIdToUsernameTable);
         echo("Associated SteamID: ".$steamId."\n");
-        echo("SteamID of game host: ".$associatedGame->gameHost);
+        echo("SteamID of game host: ".$associatedGame->gameHost."\n");
 
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
 
         if($associatedGame->gameHost == $steamId)
         {
-            echo("Client who dropped was the host of game ".$gameDetails[0]. " , ending game for all connected players");
+            echo("Client who dropped was the host of game ".$gameDetails[0]. ", ending game for all connected players\n");
             $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
             $gameCoordinator->destroyGame($gameDetails[0]);
         }
@@ -239,6 +239,12 @@ function onMessageRecieved($message,$connection):void
             }
             break;
         }
+        case "CheatNotification":
+        {
+            $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
+            break;
+        }
+
 
         default: {echo "Unknown message, discarding\n"; break;}
     }

@@ -92,7 +92,7 @@ function addToConnectionTable($connection, $roomId,$username="defaultUser")
     $connectionHash = spl_object_hash($connection);
     if(isset($connectionLog[$connectionHash]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection already exists in our log, overwriting\n");
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection already exists in our log, overwriting".\Codedungeon\PHPCliColors\Color::reset()."\n");
     }
 
     $connectionLog[$connectionHash] = array($roomId,$username);
@@ -123,7 +123,7 @@ function getPlayerFromConnectionTable($connection)
     }
     else
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection was not registered?\n");
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection was not registered?".\Codedungeon\PHPCliColors\Color::reset()."\n");
         return null;
     }
 }
@@ -134,7 +134,7 @@ function addToUsernameLookupTable($steamId,$username)
 
     if(isset($steamIdToUsernameTable[$steamId]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID already exists in our log, overwriting\n");
+        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID already exists in our log, overwriting".\Codedungeon\PHPCliColors\Color::reset()."\n");
     }
 
     $steamIdToUsernameTable[$steamId] = $username;
