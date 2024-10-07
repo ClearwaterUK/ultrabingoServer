@@ -620,7 +620,7 @@ class GameController
         }
     }
 
-    public function humiliatePlayer($gameId,$username,$steamId)
+    public function humiliatePlayer($gameId,$steamId)
     {
         $currentGame = $this->currentGames[$gameId];
         $playerToHumil = $currentGame->currentPlayers[$steamId]->username;
