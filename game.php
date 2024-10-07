@@ -469,8 +469,7 @@ class GameController
         $dcNotification->username = $playername;
         $dcNotification->steamId = $steamId;
 
-        $em = new EncapsulatedMessage("Disconnect",json_encode($dcMessage));
-        $em2 = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
+        $em = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
 
         $indexToRemove = "";
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
@@ -486,21 +485,21 @@ class GameController
                 //Notify all other players of the player leaving the game.
                 if($playerObj->websocketConnection !== $leavingConnection)
                 {
-                    sendEncodedMessage($em2,$playerObj->websocketConnection);
+                    sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
         }
         unset($game->currentPlayers[$indexToRemove]);
     }
     
-    public function disconnectAllPlayers(Int $gameid,$hostConnection):void
+    public function disconnectAllPlayers(Int $gameid,$hostConnection,$disconnectReason="UNSPECIFIED"):void
     {
         $game = $this->currentGames[$gameid];
         $dcMessage = new DisconnectSignal();
         $dcMessage->disconnectCode = 1001;
-        $dcMessage->disconnectMessage = "The host has left the game.";
+        $dcMessage->disconnectMessage = $disconnectReason;
 
-        $em = new EncapsulatedMessage("HostLeftGame",json_encode($dcMessage));
+        $em = new EncapsulatedMessage("ServerDisconnection",json_encode($dcMessage));
 
         //var_export($game->currentPlayers);
 
@@ -510,7 +509,7 @@ class GameController
             if($playerObj->websocketConnection !== $hostConnection)
             {
                 sendEncodedMessage($em,$playerObj->websocketConnection);
-                $playerObj->websocketConnection->close(1000,"Host has left game");
+                $playerObj->websocketConnection->close(1000,$disconnectReason);
             }
 
             dropFromConnectionTable($playerObj->websocketConnection);

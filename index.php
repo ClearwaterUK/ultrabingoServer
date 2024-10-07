@@ -61,23 +61,36 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         $steamId = array_search($username,$steamIdToUsernameTable);
         echo("Associated SteamID: ".$steamId."\n");
 
-        $indexToUnset = "";
-        //print_r($associatedGame->currentPlayers);
-        foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+        //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
+        //the game from the current game list.
+
+        if($associatedGame->gameHost === $steamId)
         {
-            if($playerObj->username === $username)
-            {
-                $indexToUnset = $playerSteamId;
-            }
-            else
-            {
-                echo("Sending timeout notice to ".$playerObj->username." that ".$username." dropped\n");
-                $timeoutNotif = new TimeoutNotification($username,$steamId);
-                $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
-                sendEncodedMessage($em,$playerObj->websocketConnection);
-            }
+            echo("Client who dropped was the host of game ".$gameDetails[0]. " , ending game for all connected players");
+            $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
+            $gameCoordinator->destroyGame($gameDetails[0]);
         }
-        unset($associatedGame->currentPlayers[$indexToUnset]);
+        else
+        {
+            $indexToUnset = "";
+            //print_r($associatedGame->currentPlayers);
+            foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+            {
+                if($playerObj->username === $username)
+                {
+                    $indexToUnset = $playerSteamId;
+                }
+                else
+                {
+                    echo("Sending timeout notice to ".$playerObj->username." that ".$username." dropped\n");
+                    $timeoutNotif = new TimeoutNotification($username,$steamId);
+                    $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
+                    sendEncodedMessage($em,$playerObj->websocketConnection);
+                }
+            }
+            unset($associatedGame->currentPlayers[$indexToUnset]);
+        }
+
     }
     dropFromConnectionTable($connection);
 }
@@ -171,7 +184,7 @@ function onMessageRecieved($message,$connection):void
                 if($checkResult == 1)
                 {
                     //...disconnect all players before deleting the game
-                    $gameCoordinator->disconnectAllPlayers($receivedJson['roomId'],$connection);
+                    $gameCoordinator->disconnectAllPlayers($receivedJson['roomId'],$connection,"HOSTLEFTGAME");
 
                     //Then delete the game.
                     $gameCoordinator->destroyGame($receivedJson['roomId']);
