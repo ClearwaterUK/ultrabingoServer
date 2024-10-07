@@ -624,6 +624,7 @@ class GameController
     {
         $currentGame = $this->currentGames[$gameId];
         var_export($currentGame);
+        var_export($steamId);
         $playerToHumil = $currentGame->currentPlayers[$steamId]->username;
         var_export($playerToHumil);
         foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
