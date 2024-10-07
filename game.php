@@ -631,7 +631,6 @@ class GameController
                 sendEncodedMessage($em,$playerObj->websocketConnection);
             }
         }
-
     }
 
     public function __construct()
