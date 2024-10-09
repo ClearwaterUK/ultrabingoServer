@@ -43,7 +43,6 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
     global $steamIdToUsernameTable;
 
     echo(Color::RED() . "Client was dropped - lost connection or alt-f4'd?" . Color::reset() . "\n");
-
     echo(Color::RED() . $exception->getMessage() . " (".$exception->getCode().")". Color::reset() . "\n");
 
     //Remove the dropped connection from the game that it was in.
@@ -64,12 +63,12 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
-
         if($associatedGame->gameHost == $steamId)
         {
             echo("Client who dropped was the host of game ".$gameDetails[0]. ", ending game for all connected players\n");
             $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
             $gameCoordinator->destroyGame($gameDetails[0]);
+            removeGame($gameDetails[0]);
         }
         else
         {
@@ -106,7 +105,6 @@ function onMessageRecieved($message,$connection):void
     {
         case "CreateRoom":
         {
-            echo("Received request to create room\n");
             $roomId = createRoomInDatabase($receivedJson);
 
             if($roomId <> null && $roomId <> 0)
@@ -218,16 +216,15 @@ function onMessageRecieved($message,$connection):void
                     foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                     {
                         $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                        echo("Sending level claim msg to ".$playerObj->username."\n");
                         sendEncodedMessage($message,$playerObj->websocketConnection);
                     }
                     if($hasObtainedBingo)
                     {
                         $bingoSignal = new EndGameSignal($receivedJson['team']);
+                        echo("Sending end game signal to all players\n");
                         foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
                             $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
-                            echo("Sending end game signal to ".$playerObj->username."\n");
                             sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
                     }
@@ -257,7 +254,9 @@ function onClientConnect():void
 
 function onClientDisconnect($server,$connection):void
 {
+    global $connectionLog;
     echo("Client has disconnected\n");
+
 }
 
 function loadEnvFile():void

@@ -105,9 +105,7 @@ class GameGrid
     public function __construct($size=3,$levelRotation=0)
     {
         $this->size = $size;
-        echo("Constructing grid of size ".$size."x".$size."\n");
         $this->populateGrid($levelRotation);
-        echo("Grid made\n");
     }
 }
 
@@ -189,7 +187,7 @@ class Game
     // $isHost: Bool indicating if the $player being added is the host.
     public function addPlayerToGame(GamePlayer $player, string $playerSteamId, bool $isHost=false): void
     {
-        echo("Adding player ".$player->username. " to game ".$this->gameId."\n");
+        echo("Adding ".$player->username. " (".$player->steamId.") to game ".$this->gameId."\n");
 
         $this->currentPlayers[$playerSteamId] = $player;
         if($isHost)
@@ -294,7 +292,7 @@ class Game
             else{$colorMarker++;}
         }
 
-        echo("Here are our teams:\n");
+        echo("Set teams for game ".$this->gameId.":\n");
         var_export($this->teams);
     }
 
@@ -379,8 +377,6 @@ class GameController
             $newSettings->gridSize = $settings['gridSize'];
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            echo("Grid size is now raw ".$newSettings->gridSize."\n");
-            echo("Notifying all non-host players of changed settings\n");
             $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize']);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
@@ -406,17 +402,13 @@ class GameController
             echo("Game exists, splitting all current players into teams\n");
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
-
-            echo("Level pool is ".$gameToStart->gameSettings->levelRotation);
-            echo("Constructing grid of size ".($gameToStart->gameSettings->gridSize+3)."x".($gameToStart->gameSettings->gridSize+3)."\n");
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
 
             //Send the game start signal to all players in the game
+            echo("Telling all players of game ".$gameToStart->gameId . " to start\n");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
-                echo("Telling client ".$playerObj->username."(".$playerObj->steamId.") to start\n");
-
-                $startSignal = new StartGameSignal($playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
+                $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
 
                 $message = new EncapsulatedMessage("StartGame",json_encode($startSignal));
                 sendEncodedMessage($message,$playerObj->websocketConnection);
@@ -521,6 +513,9 @@ class GameController
     {
         echo("Destroying game id ".$gameId . " from game coordinator\n");
         unset($this->currentGames[$gameId]);
+
+        echo("Removing entry from DB\n");
+        removeGame($gameId);
     }
 
     public function verifyRunSubmission($submissionData): bool
@@ -635,7 +630,8 @@ class GameController
 
     public function __construct()
     {
-        echo("Game coordinator started at: ".date("Y-m-d h:i:s")."\n");
+        date_default_timezone_set("Europe/Paris");
+        echo("Game coordinator started at: ".date("Y-m-d h:i:s A")."\n");
         $this->currentGames = [];
     }
 }

@@ -85,6 +85,15 @@ function lookForGame($roomId)
     }
 }
 
+function removeGame($roomId)
+{
+    global $dbc;
+    $request = $dbc->prepare("DELETE FROM currentGames WHERE R_ID = ?");
+    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+    $request->execute();
+
+}
+
 function addToConnectionTable($connection, $roomId,$username="defaultUser")
 {
     global $connectionLog;
@@ -96,6 +105,9 @@ function addToConnectionTable($connection, $roomId,$username="defaultUser")
     }
 
     $connectionLog[$connectionHash] = array($roomId,$username);
+
+    echo("Concurrent connections is now: ".count($connectionLog));
+    print_r($connectionLog);
 }
 
 function dropFromConnectionTable($connection)
@@ -110,6 +122,8 @@ function dropFromConnectionTable($connection)
     }
 
     unset($connectionLog[$connectionHash]);
+    echo("Concurrent connections is now: ".count($connectionLog));
+    print_r($connectionLog);
 }
 
 function getPlayerFromConnectionTable($connection)
