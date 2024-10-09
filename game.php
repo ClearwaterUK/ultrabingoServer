@@ -282,15 +282,30 @@ class Game
             $this->teams[$val] = array();
         }
 
-        //TODO: Randomise player order
+        //Randomise player order and set teams.
         $colorMarker = 1;
-        foreach($this->currentPlayers as $playerSteamId => &$playerObj)
+        $indexList = array_keys($this->currentPlayers);
+        while(count($indexList) > 0)
+        {
+            $indice = array_rand($indexList);
+            $plr = $this->currentPlayers[$indexList[$indice]];
+
+            $plr->team = $teamPointers[$colorMarker];
+            $this->putPlayerInTeam($plr->username,$colorMarker);
+            if($colorMarker == $MAX_TEAMS) {$colorMarker == 1;}
+            else{$colorMarker++;}
+
+            unset($indexList[$indice]);
+        }
+
+
+        /*foreach($this->currentPlayers as $playerSteamId => &$playerObj)
         {
             $playerObj->team = $teamPointers[$colorMarker];
             $this->putPlayerInTeam($playerObj->username,$colorMarker);
             if($colorMarker == $MAX_TEAMS) {$colorMarker == 1;}
             else{$colorMarker++;}
-        }
+        }*/
 
         echo("Set teams for game ".$this->gameId.":\n");
         var_export($this->teams);
