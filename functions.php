@@ -41,17 +41,15 @@ function createRoomInDatabase($roomData)
     try {
         $data = new RoomDataDB($roomData);
 
-        $request = $dbc->prepare("INSERT INTO currentGames(R_NAME,R_PASSWORD,R_HOSTEDBY,R_GAMETYPE,R_MAXPLAYERS,R_CURRENTPLAYERS,R_NUMTEAMS,R_PRANKREQUIRED,R_HASSTARTED) VALUES (?,?,?,?,?,1,2,?,0)");
-        $request->bindParam(1,$data->roomName,PDO::PARAM_STR);
-        $request->bindParam(2,$data->roomPassword,PDO::PARAM_STR);
-        $request->bindParam(3,$data->roomHostedBy,PDO::PARAM_STR);
-        $request->bindParam(4,$data->gameType,PDO::PARAM_INT);
-        $request->bindParam(5,$data->roomMaxPlayers,PDO::PARAM_INT);
-        $request->bindParam(6,$data->pRankRequired,PDO::PARAM_BOOL);
+        $testPass = "testPassword";
+        $testPlayer = "testPlayer";
+
+        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_LEVELROTATION,R_PRANKREQUIRED) VALUES (?,?,1,0,8,4,0,0,2,0,0)');
+        $request->bindParam(1,$testPass,PDO::PARAM_STR);
+        $request->bindParam(2,$testPlayer,PDO::PARAM_STR);
         $request->execute();
 
-        $request2 = $dbc->prepare("SELECT R_ID FROM currentGames WHERE R_NAME = ? ORDER BY R_ID DESC LIMIT 1");
-        $request2->bindParam(1,$data->roomName);
+        $request2 = $dbc->prepare("SELECT R_ID FROM currentGames ORDER BY R_ID DESC LIMIT 1");
         $request2->execute();
 
         return intval($request2->fetch()["R_ID"]);
@@ -94,6 +92,41 @@ function removeGame($roomId)
 
 }
 
+function updateGameSettings(Int $roomId,GameSettings $newSettings)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames 
+    SET R_MAXPLAYERS = ?,
+    R_MAXTEAMS = ?,
+    R_GRIDSIZE = ?,
+    R_GAMETYPE = ?,
+    R_DIFFICULTY = ?,
+    R_LEVELROTATION = ?, 
+    R_PRANKREQUIRED = ?
+    WHERE R_ID = ?");
+
+    $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
+    $request->bindParam(2,$newSettings->maxTeams,PDO::PARAM_INT);
+    $request->bindParam(3,$newSettings->gridSize,PDO::PARAM_INT);
+    $request->bindParam(4,$newSettings->gameType,PDO::PARAM_INT);
+    $request->bindParam(5,$newSettings->difficulty,PDO::PARAM_INT);
+    $request->bindParam(6,$newSettings->levelRotation,PDO::PARAM_INT);
+    $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
+    $request->bindParam(8,$roomId,PDO::PARAM_INT);
+    $request->execute();
+}
+
+function startGameInDB(int $roomId)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames 
+    SET R_HASSTARTED = 1
+    WHERE R_ID = ?");
+
+    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+    $request->execute();
+}
+
 function addToConnectionTable($connection, $roomId,$username="defaultUser")
 {
     global $connectionLog;
@@ -106,7 +139,7 @@ function addToConnectionTable($connection, $roomId,$username="defaultUser")
 
     $connectionLog[$connectionHash] = array($roomId,$username);
 
-    echo("Concurrent connections is now: ".count($connectionLog));
+    echo("Concurrent connections is now: ".count($connectionLog) . "\n");
     print_r($connectionLog);
 }
 
@@ -122,7 +155,7 @@ function dropFromConnectionTable($connection)
     }
 
     unset($connectionLog[$connectionHash]);
-    echo("Concurrent connections is now: ".count($connectionLog));
+    echo("Concurrent connections is now: ".count($connectionLog) . "\n");
     print_r($connectionLog);
 }
 

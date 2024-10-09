@@ -383,8 +383,11 @@ class GameController
             $newSettings->gridSize = $settings['gridSize'];
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
+
             $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize']);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
+
+            updateGameSettings($settings['roomId'],$newSettings);
 
             foreach($gameToUpdate->currentPlayers as $playerSteamId => &$playerObj)
             {
@@ -405,10 +408,12 @@ class GameController
         if(array_key_exists($gameId,$this->currentGames))
         {
             $gameToStart = $this->currentGames[$gameId];
-            echo("Game exists, splitting all current players into teams\n");
+            echo("Splitting all current players into teams\n");
             $gameToStart->setTeams();
             $gameToStart->gameState = GameState::inGame;
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
+
+            startGameInDB($gameId);
 
             //Send the game start signal to all players in the game
             echo("Telling all players of game ".$gameToStart->gameId . " to start\n");

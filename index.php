@@ -240,15 +240,23 @@ function onMessageRecieved($message,$connection):void
     }
 }
 
+function enumerateConnections()
+{
+    global $connectionLog;
+    echo("There are ".count($connectionLog)." active connections\n");
+}
+
 function onClientConnect():void
 {
     echo("New connection\n");
+    enumerateConnections();
 }
 
 function onClientDisconnect($server,$connection):void
 {
     global $connectionLog;
     echo("Client has disconnected\n");
+    enumerateConnections();
 
 }
 
