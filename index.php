@@ -11,7 +11,6 @@ $MAX_CONCURRENT_CONNECTIONS = 64;
 $TIMEOUT = 60;
 
 $connectionLog = array();
-
 $steamIdToUsernameTable = array();
 
 require_once('functions.php');
@@ -32,8 +31,6 @@ function decodeMessage($message)
 function sendEncodedMessage($messageToSend,$connection):void
 {
     $encodedMessage = base64_encode(json_encode($messageToSend));
-    //echo("Sending base64 message:\n");
-    //echo($encodedMessage."\n");
     $connection->text($encodedMessage);
 }
 
@@ -49,7 +46,6 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
     $gameDetails = getPlayerFromConnectionTable($connection);
     if($gameDetails != null)
     {
-        print_r($gameDetails);
         //Go into the room id
         $associatedGame = $gameCoordinator->currentGames[$gameDetails[0]];
         $username = $gameDetails[1];
@@ -58,8 +54,6 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
         print_r($steamIdToUsernameTable);
         $steamId = array_search($username,$steamIdToUsernameTable);
-        echo("Associated SteamID: ".$steamId."\n");
-        echo("SteamID of game host: ".$associatedGame->gameHost."\n");
 
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
@@ -74,6 +68,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         {
             $indexToUnset = "";
             //print_r($associatedGame->currentPlayers);
+            echo("Sending timeout notice to all players in game ".$gameDetails[0]."\n");
             foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
             {
                 if($playerObj->username === $username)
@@ -82,7 +77,6 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                 }
                 else
                 {
-                    echo("Sending timeout notice to ".$playerObj->username." that ".$username." dropped\n");
                     $timeoutNotif = new TimeoutNotification($username,$steamId);
                     $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
                     sendEncodedMessage($em,$playerObj->websocketConnection);
@@ -90,9 +84,9 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             unset($associatedGame->currentPlayers[$indexToUnset]);
         }
-
+        dropFromUsernameLookupTable($steamId);
+        dropFromConnectionTable($connection);
     }
-    dropFromConnectionTable($connection);
 }
 
 function onMessageRecieved($message,$connection):void
@@ -106,7 +100,6 @@ function onMessageRecieved($message,$connection):void
         case "CreateRoom":
         {
             $roomId = createRoomInDatabase($receivedJson);
-
             if($roomId <> null && $roomId <> 0)
             {
                 //Create the room
