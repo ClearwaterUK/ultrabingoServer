@@ -139,11 +139,11 @@ class GameSettings
     {
         $this->maxPlayers = 8;
         $this->maxTeams = 4;
-        $this->requiresPRank = false;
+        $this->gridSize = 0; //3x3 by default
         $this->gameType = 0; //Time by default
-        $this->difficulty = 0; //Harmless by default
+        $this->difficulty = 2; //Standard by default
         $this->levelRotation = 0; //Campaign only by default
-        $this->gridSize = 0; // 3x3 by default
+        $this->requiresPRank = false;
     }
 }
 
