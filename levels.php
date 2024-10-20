@@ -71,8 +71,8 @@ $angryLevels = array(
         "0226026e4545b77408cb64ee23f2d163","lazy.lust.requiem"),
     new LevelInformation("EPITAPH","willem1321-epitaph",true,
         "a9137dc898362c44593878839cd899a6","willem1321-epitaph"),
-    new LevelInformation("THE HOUSE OF WRATH","THOW.essentials",true,
-        "3707483841d6ed84383be5b1285ea87a","THOW.essentials"),
+    new LevelInformation("FUN SIZED HERESY","fnchannel.fsheresy.fireswithinfires",true,
+        "ae6eeb9c8e3741441986985171f75b56","fnchannel.fsheresy.fireswithinfires"),
     new LevelInformation("REVOLT FROM THE ABYSS","robi-revolt from the abyss",true,
             "5022b89edd299f34685d89cb743ef2ef","robi-revolt from the abyss")
 );
