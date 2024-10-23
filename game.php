@@ -163,6 +163,14 @@ class Game
 
     public GameSettings $gameSettings; //Settings for the game, represented by a GameSettings object.
 
+    public string $firstMapClaimed;
+    public string $lastMapClaimed;
+
+    public int $numOfClaims;
+
+    public $startTime;
+    public $endTime;
+
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
         $this->currentPlayers = [];
@@ -180,6 +188,10 @@ class Game
         $this->grid = new GameGrid($this->gameSettings->gridSize+3);
 
         $this->gameState = GameState::inLobby;
+
+        $this->numOfClaims = 0;
+        $this->firstMapClaimed = "";
+        $this->lastMapClaimed = "";
     }
 
     //Adds a player to the current Game.
@@ -415,6 +427,10 @@ class GameController
 
             startGameInDB($gameId);
 
+            //Mark the start time
+            $gameToStart->startTime = new DateTime();
+            echo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A") . "\n");
+
             //Send the game start signal to all players in the game
             echo("Telling all players of game ".$gameToStart->gameId . " to start\n");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
@@ -568,6 +584,11 @@ class GameController
         return false;
     }
 
+    public function isFirstMapClaimed(Game $game)
+    {
+        return $game->firstMapClaimed <> "";
+    }
+
     /*
      * Returns 3 values:
      * -1: Submission did not beat the criteria
@@ -592,6 +613,14 @@ class GameController
             $levelInCard->timeToBeat = $submissionData['time'];
             $levelInCard->styleToBeat = $submissionData['style'];
 
+            $currentGame->numOfClaims++;
+            if(!$this->isFirstMapClaimed($currentGame))
+            {
+                $currentGame->firstMapClaimed = $levelInCard->levelName;
+            }
+
+            $currentGame->lastMapClaimed = $levelInCard->levelName;
+
             return 0;
         }
         else
@@ -606,6 +635,9 @@ class GameController
                     $levelInCard->timeToBeat = $submissionData['time'];
                     $levelInCard->styleToBeat = $submissionData['style'];
 
+                    $currentGame->numOfClaims++;
+                    $currentGame->lastMapClaimed = $levelInCard->levelName;
+
                     return 1;
                 }
                 else
@@ -615,6 +647,10 @@ class GameController
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
                     $levelInCard->styleToBeat = $submissionData['style'];
+
+                    $currentGame->numOfClaims++;
+                    $currentGame->lastMapClaimed = $levelInCard->levelName;
+
                     return 2;
                 }
             }

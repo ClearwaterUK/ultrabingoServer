@@ -213,7 +213,21 @@ function onMessageRecieved($message,$connection):void
                     }
                     if($hasObtainedBingo)
                     {
-                        $bingoSignal = new EndGameSignal($receivedJson['team']);
+                        $gameToEnd = $gameCoordinator->currentGames[$gameId];
+
+                        //Get all the necessary endgame stats to send to each player.
+                        $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
+                        echo("Winning players: \n");
+
+                        $endTime = new DateTime();
+                        echo("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A") . "\n");
+
+                        $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
+                        echo("Elapsed time of game: ".$elapsedTime."\n");
+
+                        $claims = $gameToEnd->numOfClaims;
+
+                        $bingoSignal = new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed);
                         echo("Sending end game signal to all players\n");
                         foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
@@ -309,7 +323,7 @@ try {
         ->start();
 } catch (Throwable $e) {
     echo(Color::red() . "Server error!".Color::reset()."\n");
-    echo($e->getMessage()."\n");
+    echo($e->getMessage()."(".$e->getFile().", ".$e->getLine().")\n");
 }
 
 
