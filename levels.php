@@ -45,8 +45,9 @@ $angryLevels = array(
         "bf1915814f5c0bd48a1b735cf4b3cc75","frizou.paradiso.moonFirst"),
     new LevelInformation("WHITEBOX - BLANK SLATE","Smallkloon.whitebox",true,
         "d90ddfc949d091240a9ca886bc7785c2","Smallkloon.whitebox"),
-    new LevelInformation("CANIA - THE LONE AND LEVEL SANDS","SmallSpelunky.CANIA_DIAPHONY",true,
-        "4837f9ca4a704014cb078b0a427dc546","SmallSpelunky.CANIA_DIAPHONY"),
+    //Intentional space for Cania ID, don't remove!
+    new LevelInformation("CANIA - THE LONE AND LEVEL SANDS","SmallSpelunky.CANIA_DIAPHONY ",true,
+        "4837f9ca4a704014cb078b0a427dc546","SmallSpelunky.CANIA_DIAPHONY "),
     new LevelInformation("ALTWRATH - DEPTHS OF DESPAIR","draghtnim-altwrath1",true,
         "dc7d05beb4afba646b07078325fd9385","draghtnim-altwrath1"),
     new LevelInformation("ALTGREED - ENEMY OF THE SUN","fnchannel.altgreed.enemyofsun",true,

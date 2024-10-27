@@ -171,6 +171,9 @@ class Game
     public $startTime;
     public $endTime;
 
+    public string $bestStatMap;
+    public string $bestStatValue;
+
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
         $this->currentPlayers = [];
@@ -192,6 +195,9 @@ class Game
         $this->numOfClaims = 0;
         $this->firstMapClaimed = "";
         $this->lastMapClaimed = "";
+
+        $this->bestStatValue = 0;
+        $this->bestStatMap = "";
     }
 
     //Adds a player to the current Game.
@@ -220,6 +226,21 @@ class Game
         global $teamPointers;
 
         array_push($this->teams[$teamPointers[$teamColor]],$player);
+    }
+
+    public function updateBestStatValue($statValue,$statMapName)
+    {
+
+        if($this->gameSettings->gameType == 0 && (($this->bestStatValue > 0 && $statValue < $this->bestStatValue) || $statValue < $this->bestStatValue))
+        {
+            $this->bestStatValue = $statValue;
+            $this->bestStatMap = $statMapName;
+        }
+        else if ($this->gameSettings->gameType == 1 && $statValue > $this->bestStatValue)
+        {
+            $this->bestStatValue = $statValue;
+            $this->bestStatMap = $statMapName;
+        }
     }
 
     //Check if a team has obtained a bingo in the game grid.
@@ -589,6 +610,8 @@ class GameController
         return $game->firstMapClaimed <> "";
     }
 
+
+
     /*
      * Returns 3 values:
      * -1: Submission did not beat the criteria
@@ -621,6 +644,8 @@ class GameController
 
             $currentGame->lastMapClaimed = $levelInCard->levelName;
 
+            $currentGame->updateBestStatValue(($currentGame->gameSettings->gameType == 0 ? $submissionData['time'] : $submissionData['style']),$levelInCard->levelName);
+
             return 0;
         }
         else
@@ -637,6 +662,8 @@ class GameController
 
                     $currentGame->numOfClaims++;
                     $currentGame->lastMapClaimed = $levelInCard->levelName;
+
+
 
                     return 1;
                 }
