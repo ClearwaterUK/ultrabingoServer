@@ -243,6 +243,35 @@ function onMessageRecieved($message,$connection):void
             }
             break;
         }
+        case "UpdateTeamSettings":
+        {
+            $gameId = $receivedJson['gameId'];
+            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            {
+                echo("Updating teams for game ".$gameId."\n");
+                $gameCoordinator->currentGames[$gameId]->updateTeams($receivedJson["teams"]);
+            }
+            else
+            {
+                echo("Tried to update teams for game ".$gameId."but it doesn't exist!\n");
+            }
+
+            break;
+        }
+        case "ClearTeams":
+        {
+            $gameId = $receivedJson['gameId'];
+            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            {
+                echo("Clearing teams of game ".$gameId."\n");
+                $gameCoordinator->currentGames[$gameId]->clearTeams();
+            }
+            else
+            {
+                echo("Tried to clear teams for game ".$gameId."but it doesn't exist!\n");
+            }
+            break;
+        }
         case "CheatActivation":
         {
             $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);

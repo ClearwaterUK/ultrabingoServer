@@ -44,7 +44,7 @@ function createRoomInDatabase($roomData)
         $testPass = "testPassword";
         $testPlayer = "testPlayer";
 
-        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_LEVELROTATION,R_PRANKREQUIRED) VALUES (?,?,1,0,8,4,0,0,2,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_LEVELROTATION,R_PRANKREQUIRED) VALUES (?,?,1,0,8,4,0,0,0,0,2,0,0)');
         $request->bindParam(1,$testPass,PDO::PARAM_STR);
         $request->bindParam(2,$testPlayer,PDO::PARAM_STR);
         $request->execute();
@@ -98,6 +98,7 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request = $dbc->prepare("UPDATE currentGames 
     SET R_MAXPLAYERS = ?,
     R_MAXTEAMS = ?,
+    R_TEAMCOMPOSITION = ?,
     R_GRIDSIZE = ?,
     R_GAMETYPE = ?,
     R_DIFFICULTY = ?,
@@ -107,12 +108,13 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
 
     $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
     $request->bindParam(2,$newSettings->maxTeams,PDO::PARAM_INT);
-    $request->bindParam(3,$newSettings->gridSize,PDO::PARAM_INT);
-    $request->bindParam(4,$newSettings->gameType,PDO::PARAM_INT);
-    $request->bindParam(5,$newSettings->difficulty,PDO::PARAM_INT);
-    $request->bindParam(6,$newSettings->levelRotation,PDO::PARAM_INT);
-    $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
-    $request->bindParam(8,$roomId,PDO::PARAM_INT);
+    $request->bindParam(3,$newSettings->teamComposition,PDO::PARAM_INT);
+    $request->bindParam(4,$newSettings->gridSize,PDO::PARAM_INT);
+    $request->bindParam(5,$newSettings->gameType,PDO::PARAM_INT);
+    $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
+    $request->bindParam(7,$newSettings->levelRotation,PDO::PARAM_INT);
+    $request->bindParam(8,$newSettings->requiresPRank,PDO::PARAM_BOOL);
+    $request->bindParam(9,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 
@@ -126,6 +128,19 @@ function startGameInDB(int $roomId)
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
+
+function updateRoomJoinPermission(int $roomId, int $joinable)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames 
+    SET R_JOINABLE = ?
+    WHERE R_ID = ?");
+
+    $request->bindParam(1,$joinable,PDO::PARAM_INT);
+    $request->bindParam(2,$roomId,PDO::PARAM_INT);
+    $request->execute();
+}
+
 
 function addToConnectionTable($connection, $roomId,$username="defaultUser")
 {

@@ -2,8 +2,8 @@
 
 $MAX_TEAMS = 4;
 $teamPointers = array(
-    1 => "Green",
-    2 => "Red",
+    1 => "Red",
+    2 => "Green",
     3 => "Blue",
     4 => "Yellow",
 );
@@ -129,21 +129,28 @@ class GameSettings
 {
     public int $maxPlayers;
     public int $maxTeams;
+    public int $teamComposition;
     public bool $requiresPRank;
     public int $gameType;
     public int $difficulty;
     public int $levelRotation;
     public int $gridSize;
 
+    public bool $hasManuallySetTeams;
+
+    public $presetTeams;
+
     public function __construct()
     {
         $this->maxPlayers = 8;
         $this->maxTeams = 4;
+        $this->teamComposition = 0; //Randomised teams by default
         $this->gridSize = 0; //3x3 by default
         $this->gameType = 0; //Time by default
         $this->difficulty = 2; //Standard by default
         $this->levelRotation = 0; //Campaign only by default
         $this->requiresPRank = false;
+        $this->hasManuallySetTeams = false;
     }
 }
 
@@ -228,9 +235,41 @@ class Game
         array_push($this->teams[$teamPointers[$teamColor]],$player);
     }
 
+    public function updateTeams($teamDict):void
+    {
+        echo("Manually setting teams for room ".$this->gameId." and locking room\n");
+        $this->gameSettings->presetTeams = $teamDict;
+        $this->gameSettings->hasManuallySetTeams = true;
+
+        updateRoomJoinPermission($this->gameId,0);
+
+        $ud = new UpdateTeams(0);
+        $em = new EncapsulatedMessage("UpdateTeamsNotif",json_encode($ud));
+
+        foreach($this->currentPlayers as $playerSteamId => $playerObj)
+        {
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+        }
+    }
+
+    public function clearTeams():void
+    {
+        echo("Clearing set teams for room ".$this->gameId." and unlocking room\n");
+        unset($this->gameSettings->presetTeams);
+        $this->gameSettings->hasManuallySetTeams = false;
+        updateRoomJoinPermission($this->gameId,1);
+
+        $ud = new UpdateTeams(1);
+        $em = new EncapsulatedMessage("UpdateTeamsNotif",json_encode($ud));
+
+        foreach($this->currentPlayers as $playerSteamId => $playerObj)
+        {
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+        }
+    }
+
     public function updateBestStatValue($statValue,$statMapName)
     {
-
         if($this->gameSettings->gameType == 0 && (($this->bestStatValue > 0 && $statValue < $this->bestStatValue) || $statValue < $this->bestStatValue))
         {
             $this->bestStatValue = $statValue;
@@ -303,6 +342,30 @@ class Game
         return($horizontal || $vertical || $diagonalUp || $diagonalDown);
     }
 
+    public function setTeamsFromPreset($presetTeams):void
+    {
+        global $teamPointers;
+
+        //Initialise team arrays
+        foreach($teamPointers as $key => $val)
+        {
+            $this->teams[$val] = array();
+        }
+
+        //Loop through each SteamID, and put them in the associated team.
+        foreach($presetTeams as $steamId => $team)
+        {
+            $plr = $this->currentPlayers[$steamId];
+
+            $plr->team = $teamPointers[$team];
+            $this->putPlayerInTeam($plr->username,$team);
+        }
+
+        echo("Set preset teams for game ".$this->gameId.":\n");
+        var_export($this->teams);
+
+    }
+
     //Split all Players connected to the Game into teams when the Game is started.
     public function setTeams():void
     {
@@ -365,12 +428,18 @@ class GameController
             if($gameLookup['R_CURRENTPLAYERS'] == $gameLookup['R_MAXPLAYERS'])
             {
                 echo("Game is already full\n");
-                return -2;
+                return -4;
+            }
+            //If the game has manually set teams, make sure the host is still allowing players (teams have not been locked in):
+            if($gameLookup['R_TEAMCOMPOSITION'] == 1 && $gameLookup['R_JOINABLE'] == 0)
+            {
+                echo("Game not accepting new players");
+                return -3;
             }
             if($gameLookup['R_HASSTARTED'] == 1)
             {
                 echo("Game has already started\n");
-                return -1;
+                return -2;
             }
 
             //Broadcast the new player joining to everyone else in the current Game.
@@ -396,12 +465,14 @@ class GameController
         }
         else
         {
-            return -3;
+            return -1;
         }
     }
 
     public function updateGameSettings($settings):void
     {
+        $wereTeamsReset = false;
+
         if(array_key_exists($settings['roomId'],$this->currentGames))
         {
             $gameToUpdate = $this->currentGames[$settings['roomId']];
@@ -409,15 +480,26 @@ class GameController
             $newSettings = new GameSettings();
             $newSettings->maxPlayers = $settings['maxPlayers'];
             $newSettings->maxTeams = $settings['maxTeams'];
+            $newSettings->teamComposition = $settings['teamComposition'];
             $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->levelRotation = $settings['levelRotation'];
             $newSettings->gridSize = $settings['gridSize'];
+            $newSettings->teamComposition = $settings['teamComposition'];
+
+            if($newSettings->teamComposition == 0 && $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams)
+            {
+                echo("Teams were set but host is switching back to randomised, resetting teams\n");
+                $newSettings->hasManuallySetTeams = false;
+                $newSettings->presetTeams = null;
+                updateRoomJoinPermission($settings['roomId'],1);
+                $wereTeamsReset = true;
+            }
+
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize']);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize'],$wereTeamsReset);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             updateGameSettings($settings['roomId'],$newSettings);
@@ -441,8 +523,19 @@ class GameController
         if(array_key_exists($gameId,$this->currentGames))
         {
             $gameToStart = $this->currentGames[$gameId];
-            echo("Splitting all current players into teams\n");
-            $gameToStart->setTeams();
+
+            if($gameToStart->gameSettings->hasManuallySetTeams)
+            {
+                echo("Splitting teams based on host-defined preset\n");
+                $gameToStart->setTeamsFromPreset($gameToStart->gameSettings->presetTeams);
+            }
+            else
+            {
+                echo("Splitting all current players into teams\n");
+                $gameToStart->setTeams();
+            }
+
+
             $gameToStart->gameState = GameState::inGame;
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
 
@@ -508,6 +601,13 @@ class GameController
         $dcNotification = new DisconnectNotification();
         $dcNotification->username = $playername;
         $dcNotification->steamId = $steamId;
+
+        if($game->gameSettings->hasManuallySetTeams)
+        {
+            $game->gameSettings->hasManuallySetTeams = false;
+            unset($game->gameSettings->presetTeams);
+            updateRoomJoinPermission($gameid,1);
+        }
 
         $em = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
 
