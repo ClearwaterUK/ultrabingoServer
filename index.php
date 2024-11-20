@@ -243,6 +243,20 @@ function onMessageRecieved($message,$connection):void
             }
             break;
         }
+        case "UpdateMapPool":
+        {
+            $gameId = $receivedJson['gameId'];
+            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            {
+                echo("Updating map pools for game ".$gameId."\n");
+                $gameCoordinator->currentGames[$gameId]->updateMapPool($receivedJson["mapPoolIds"]);
+            }
+            else
+            {
+                echo("Tried to update map pools for game ".$gameId."but it doesn't exist!\n");
+            }
+            break;
+        }
         case "UpdateTeamSettings":
         {
             $gameId = $receivedJson['gameId'];

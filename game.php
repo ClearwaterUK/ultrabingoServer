@@ -67,22 +67,23 @@ class GameLevel
 //Represents the grid of levels selected to be played in a game.
 class GameGrid
 {
-    public int $size; //We'll only do 3x3 for now for testing, but will have to bump up to 5x5
+    public int $size; //n*n size of the grid.
 
     public array $levelTable; //Array containing the level id and the associated coordinates on the grid.
 
-    public function populateGrid($levelPoolSetting=0):void
+    public function populateGrid($mapPoolIds):void
     {
-        global $campaignLevels;
-        global $angryLevels;
+        global $mapPools;
 
         $levelPool = array();
-
-        switch($levelPoolSetting)
+        if(count($mapPoolIds) == 0)
         {
-            case 0: {echo("Using campaign levels only\n"); $levelPool = $campaignLevels; break;}
-            case 1: {echo("Using Angry levels only\n"); $levelPool = $angryLevels;  break;}
-            case 2: {echo("Using campaign and Angry levels \n"); $levelPool = array_merge($campaignLevels,$angryLevels); break;}
+            return;
+        }
+
+        foreach($mapPoolIds as $id)
+        {
+            $levelPool = array_merge($levelPool,$mapPools[$id]);
         }
 
         for($x = 0; $x <= $this->size-1; $x++)
@@ -102,10 +103,10 @@ class GameGrid
         }
     }
 
-    public function __construct($size=3,$levelRotation=0)
+    public function __construct($size=3,$mapPoolIds="")
     {
         $this->size = $size;
-        $this->populateGrid($levelRotation);
+        $this->populateGrid($mapPoolIds);
     }
 }
 
@@ -136,6 +137,8 @@ class GameSettings
     public int $levelRotation;
     public int $gridSize;
 
+    public $selectedMapPools;
+
     public bool $hasManuallySetTeams;
 
     public $presetTeams;
@@ -151,6 +154,7 @@ class GameSettings
         $this->levelRotation = 0; //Campaign only by default
         $this->requiresPRank = false;
         $this->hasManuallySetTeams = false;
+        $this->selectedMapPools = array();
     }
 }
 
@@ -195,7 +199,7 @@ class Game
         $this->gameSettings = new GameSettings();
 
         //Pre-generate the grid of levels, pending a new dynamic generation on game start.
-        $this->grid = new GameGrid($this->gameSettings->gridSize+3);
+        $this->grid = new GameGrid(3,array());
 
         $this->gameState = GameState::inLobby;
 
@@ -233,6 +237,11 @@ class Game
         global $teamPointers;
 
         array_push($this->teams[$teamPointers[$teamColor]],$player);
+    }
+
+    public function updateMapPool($mapPoolList)
+    {
+        $this->gameSettings->selectedMapPools = $mapPoolList;
     }
 
     public function updateTeams($teamDict):void
@@ -400,7 +409,7 @@ class Game
 
     public function generateGrid($size=3):void
     {
-        $this->grid = new GameGrid($size,$this->gameSettings->levelRotation);
+        $this->grid = new GameGrid($size,$this->gameSettings->selectedMapPools);
     }
 }
 
