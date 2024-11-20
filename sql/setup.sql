@@ -29,7 +29,6 @@ create table currentGames
     R_GRIDSIZE int NOT NULL,
     R_GAMETYPE int NOT NULL,
     R_DIFFICULTY int NOT NULL,
-    R_LEVELROTATION int NOT NULL,
     R_PRANKREQUIRED BOOLEAN NOT NULL
 
 );

@@ -44,7 +44,7 @@ function createRoomInDatabase($roomData)
         $testPass = "testPassword";
         $testPlayer = "testPlayer";
 
-        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_LEVELROTATION,R_PRANKREQUIRED) VALUES (?,?,1,0,8,4,0,0,0,0,2,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED) VALUES (?,?,1,0,8,4,0,0,0,0,2,0)');
         $request->bindParam(1,$testPass,PDO::PARAM_STR);
         $request->bindParam(2,$testPlayer,PDO::PARAM_STR);
         $request->execute();
@@ -102,7 +102,6 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_GRIDSIZE = ?,
     R_GAMETYPE = ?,
     R_DIFFICULTY = ?,
-    R_LEVELROTATION = ?, 
     R_PRANKREQUIRED = ?
     WHERE R_ID = ?");
 
@@ -112,9 +111,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(4,$newSettings->gridSize,PDO::PARAM_INT);
     $request->bindParam(5,$newSettings->gameType,PDO::PARAM_INT);
     $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
-    $request->bindParam(7,$newSettings->levelRotation,PDO::PARAM_INT);
-    $request->bindParam(8,$newSettings->requiresPRank,PDO::PARAM_BOOL);
-    $request->bindParam(9,$roomId,PDO::PARAM_INT);
+    $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
+    $request->bindParam(8,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 

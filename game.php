@@ -134,7 +134,6 @@ class GameSettings
     public bool $requiresPRank;
     public int $gameType;
     public int $difficulty;
-    public int $levelRotation;
     public int $gridSize;
 
     public $selectedMapPools;
@@ -151,7 +150,6 @@ class GameSettings
         $this->gridSize = 0; //3x3 by default
         $this->gameType = 0; //Time by default
         $this->difficulty = 2; //Standard by default
-        $this->levelRotation = 0; //Campaign only by default
         $this->requiresPRank = false;
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
@@ -493,7 +491,6 @@ class GameController
             $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
-            $newSettings->levelRotation = $settings['levelRotation'];
             $newSettings->gridSize = $settings['gridSize'];
             $newSettings->teamComposition = $settings['teamComposition'];
 
@@ -508,7 +505,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['levelRotation'],$settings['gridSize'],$wereTeamsReset);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$wereTeamsReset);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             updateGameSettings($settings['roomId'],$newSettings);
