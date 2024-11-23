@@ -249,7 +249,7 @@ function onMessageRecieved($message,$connection):void
             if(array_key_exists($gameId,$gameCoordinator->currentGames))
             {
                 echo("Updating map pools for game ".$gameId."\n");
-                $gameCoordinator->currentGames[$gameId]->updateMapPool($receivedJson["mapPoolIds"]);
+                $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
             }
             else
             {

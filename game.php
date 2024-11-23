@@ -90,6 +90,7 @@ class GameGrid
         {
             for($y = 0; $y <= $this->size-1; $y++)
             {
+
                 //Pick a level from our level list, set it, and then remove to prevent duplicates
                 $selectedIndex = array_rand($levelPool);
                 $levelObj = $levelPool[$selectedIndex];
@@ -493,6 +494,7 @@ class GameController
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->gridSize = $settings['gridSize'];
             $newSettings->teamComposition = $settings['teamComposition'];
+            $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
 
             if($newSettings->teamComposition == 0 && $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams)
             {
