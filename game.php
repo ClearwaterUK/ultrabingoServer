@@ -495,6 +495,8 @@ class GameController
             $newSettings->gridSize = $settings['gridSize'];
             $newSettings->teamComposition = $settings['teamComposition'];
             $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
+            $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
+            $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;
 
             if($newSettings->teamComposition == 0 && $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams)
             {

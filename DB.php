@@ -4,9 +4,6 @@ $dbc = null;
 
 function initialiseDatabase()
 {
-
-    //$dbc = new mysqli($_ENV['DB_ADDRESS'],$_ENV['DB_USER'],$_ENV['DB_PASSWORD'],$_ENV['DB_DATABASE']);
-
     $dbAddress = $_ENV['DB_ADDRESS'];
     $dbName = $_ENV['DB_DATABASE'];
     $dbUsername = $_ENV['DB_USER'];
@@ -17,7 +14,7 @@ function initialiseDatabase()
 
         $dbc = new PDO("mysql:host=$dbAddress;dbname=$dbName",$dbUsername,$dbPassword);
         $dbc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        echo("DB connection up \n");
+        logMessage("DB connection up");
     }
     catch(PDOException $e)
     {

@@ -9,9 +9,6 @@
 // The amount of teams
 // If P-rank is required or not
 // If the game has already started or not
-
-// Eventually: If the game uses custom levels via Angry or any other level loader
-
 class RoomDataDB
 {
     public $roomName;
@@ -20,7 +17,6 @@ class RoomDataDB
 
     public $gameType;
     public $roomMaxPlayers;
-    //public $numTeams;
     public $pRankRequired;
 
     public function __construct($data)
@@ -30,7 +26,6 @@ class RoomDataDB
         $this->roomHostedBy = $data["hostSteamName"];
         $this->roomMaxPlayers = intval($data["maxPlayers"]);
         $this->gameType = $data["gameType"];
-        //$this->numTeams = $data["roomName"];
         $this->pRankRequired = $data["pRankRequired"];
     }
 }
@@ -59,7 +54,6 @@ function createRoomInDatabase($roomData)
         echo($e->getMessage());
         return 0;
     }
-
 }
 
 //TODO: Move this to DB.php
@@ -67,7 +61,7 @@ function lookForGame($roomId)
 {
     global $dbc;
 
-    $request = $dbc->prepare("SELECT * FROM currentGames WHERE R_ID = ?");
+    $request = $dbc->prepare("SELECT R_ID FROM currentGames WHERE R_ID = ?");
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
 
@@ -89,7 +83,18 @@ function removeGame($roomId)
     $request = $dbc->prepare("DELETE FROM currentGames WHERE R_ID = ?");
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
+}
 
+
+function startGameInDB(int $roomId)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames 
+    SET R_HASSTARTED = 1
+    WHERE R_ID = ?");
+
+    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+    $request->execute();
 }
 
 function updateGameSettings(Int $roomId,GameSettings $newSettings)
@@ -116,17 +121,6 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->execute();
 }
 
-function startGameInDB(int $roomId)
-{
-    global $dbc;
-    $request = $dbc->prepare("UPDATE currentGames 
-    SET R_HASSTARTED = 1
-    WHERE R_ID = ?");
-
-    $request->bindParam(1,$roomId,PDO::PARAM_INT);
-    $request->execute();
-}
-
 function updateRoomJoinPermission(int $roomId, int $joinable)
 {
     global $dbc;
@@ -139,7 +133,6 @@ function updateRoomJoinPermission(int $roomId, int $joinable)
     $request->execute();
 }
 
-
 function addToConnectionTable($connection, $roomId,$username="defaultUser")
 {
     global $connectionLog;
@@ -147,12 +140,12 @@ function addToConnectionTable($connection, $roomId,$username="defaultUser")
     $connectionHash = spl_object_hash($connection);
     if(isset($connectionLog[$connectionHash]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection already exists in our log, overwriting".\Codedungeon\PHPCliColors\Color::reset()."\n");
+        logWarn("Associated SteamID already exists in our log, overwriting");
     }
 
     $connectionLog[$connectionHash] = array($roomId,$username);
 
-    echo("Concurrent connections is now: ".count($connectionLog) . "\n");
+    logWarn("Concurrent connections is now: ".count($connectionLog));
     print_r($connectionLog);
 }
 
@@ -164,11 +157,11 @@ function dropFromConnectionTable($connection)
 
     if(!isset($connectionLog[$connectionHash]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection doesn't exist in our log...".\Codedungeon\PHPCliColors\Color::reset()."\n");
+        logWarn("Associated SteamID doesn't exist in our log...");
     }
 
     unset($connectionLog[$connectionHash]);
-    echo("Concurrent connections is now: ".count($connectionLog) . "\n");
+    logWarn("Concurrent connections is now: ".count($connectionLog));
     print_r($connectionLog);
 }
 
@@ -183,7 +176,7 @@ function getPlayerFromConnectionTable($connection)
     }
     else
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Connection was not registered?".\Codedungeon\PHPCliColors\Color::reset()."\n");
+        logWarn("Connection was not registered?");
         return null;
     }
 }
@@ -194,7 +187,7 @@ function addToUsernameLookupTable($steamId,$username)
 
     if(isset($steamIdToUsernameTable[$steamId]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID already exists in our log, overwriting".\Codedungeon\PHPCliColors\Color::reset()."\n");
+        logWarn("Associated SteamID already exists in our log, overwriting");
     }
 
     $steamIdToUsernameTable[$steamId] = $username;
@@ -206,7 +199,7 @@ function dropFromUsernameLookupTable($steamId)
 
     if(!isset($steamIdToUsernameTable[$steamId]))
     {
-        echo(\Codedungeon\PHPCliColors\Color::yellow() . "Associated SteamID doesn't exist in our log...".\Codedungeon\PHPCliColors\Color::reset()."\n");
+        logWarn("Associated SteamID doesn't exist in our log...");
     }
 
     unset($steamIdToUsernameTable[$steamId]);
