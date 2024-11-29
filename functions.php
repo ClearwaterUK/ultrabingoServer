@@ -61,7 +61,7 @@ function lookForGame($roomId)
 {
     global $dbc;
 
-    $request = $dbc->prepare("SELECT R_ID FROM currentGames WHERE R_ID = ?");
+    $request = $dbc->prepare("SELECT R_ID,R_CURRENTPLAYERS,R_MAXPLAYERS,R_TEAMCOMPOSITION,R_JOINABLE,R_HASSTARTED FROM currentGames WHERE R_ID = ?");
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
 

@@ -429,6 +429,7 @@ class GameController
     {
         // Lookup the game id in the DB and see if it exists.
         $gameLookup = lookForGame($gameId);
+
         if(lookForGame($gameId) <> null)
         {
             echo("Game with given id found\n");
