@@ -6,7 +6,7 @@ require __DIR__ . '/vendor/autoload.php';
 $PORT = 2052;
 
 $MAX_CONCURRENT_CONNECTIONS = 64;
-$TIMEOUT = 60;
+$TIMEOUT = 90;
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
