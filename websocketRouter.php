@@ -272,7 +272,16 @@ function onMessageRecieved($message,$connection):void
             $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
             break;
         }
+        case "VerifyModList":
+        {
+            $verification =verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
+            $message = new ValidateModlist($verification);
+            $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
+            sendEncodedMessage($em,$connection);
+            break;
+        }
         default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
     }
+
 }
 ?>

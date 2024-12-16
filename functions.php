@@ -56,6 +56,32 @@ function createRoomInDatabase($roomData)
     }
 }
 
+function verifyModList($modList,$steamId)
+{
+    $whitelistedMods =
+        ["Baphomet's BINGO","AngryLevelLoader","PluginConfigurator","UnityExplorer"];
+
+    logMessage($steamId);
+    foreach($modList as $mod)
+    {
+        logWarn($mod);
+        if($mod == "UnityExplorer" && !($steamId == "76561198128998723"))
+        {
+            logWarn("Client has UnityExplorer but isn't dev!");
+            return false;
+        }
+        else if(!in_array($mod,$whitelistedMods))
+        {
+            logWarn("Client is using non-whitelisted mod: ".$mod);
+            return false;
+        }
+    }
+    logMessage("Mod list check ok");
+    return true;
+
+}
+
+
 //TODO: Move this to DB.php
 function lookForGame($roomId)
 {

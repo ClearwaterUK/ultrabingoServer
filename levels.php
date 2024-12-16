@@ -114,14 +114,24 @@ $mapPools['angryStandard'] = array(
         "00891f35080eebb41bd66b58ba2a3374","Garden of lost desires"),
     new LevelInformation("SPECIAL DELIVERY","octo-special delivery",true,
         "2d099b87cc7ee29489432630961fc217","octo-special delivery"),
-    new LevelInformation("REQUIEM","lazy.lust.requiem",true,
-        "0226026e4545b77408cb64ee23f2d163","lazy.lust.requiem"),
     new LevelInformation("EPITAPH","willem1321-epitaph",true,
         "a9137dc898362c44593878839cd899a6","willem1321-epitaph"),
     new LevelInformation("FUN SIZED HERESY","fnchannel.fsheresy.fireswithinfires",true,
         "ae6eeb9c8e3741441986985171f75b56","fnchannel.fsheresy.fireswithinfires"),
     new LevelInformation("REVOLT FROM THE ABYSS","robi-revolt from the abyss",true,
-        "5022b89edd299f34685d89cb743ef2ef","robi-revolt from the abyss")
+        "5022b89edd299f34685d89cb743ef2ef","robi-revolt from the abyss"),
+    new LevelInformation("INFERNO - RUBBLE IN THE SKY","pixelpower.layer.i1",true,
+        "e8607aa1b4abd4d4796c60e3c7dfbcb6","pixelpower.layer.i1"),
+    new LevelInformation("DESCENT INTO EXILE","vvenvss.descentintoexile.descentintoexile",true,
+        "b36df525a2569f04a803ccc921595ffe","vvenvss.descentintoexile.descentintoexile"),
+    new LevelInformation("CULT OF DOPEFISH","willem1321.cultofdopefish",true,
+        "e98fa83cf53614347ae81fcba72767de","willem1321.cultofdopefish"),
+    new LevelInformation("SINS OF MANKIND","sins.of_mankind.sam066",true,
+        "818e61704523df04289de827015d778b","sins.of_mankind.sam066"),
+    new LevelInformation("IMMINENT COLLAPSE OF THE PAST","GGGamesXDlol.RudeJam2",true,
+        "12db525d3ca45174fbb58fa9d620b112","GGGamesXDlol.RudeJam2"),
+    new LevelInformation("RE-WRATH - A MAN MADE SEA","funny.rewrath.level2",true,
+        "d916f350fc8b1b64e91567180610db04","funny.rewrath.level2")
 );
 
 // Angry Hardcore
@@ -142,18 +152,37 @@ $mapPools['angryHardcore'] = array(
         "033ce9db13ba74d4aa07bdae343d49c2","Spelunky.FRAUDULENCE_SECOND"),
     new LevelInformation("MINI HELL","megacheb.minihell",true,
         "c10731c87bbd7924c8a8244b5cc402f5","megacheb.minihell"),
-    new LevelInformation("ENVY - LOST FIELDS OF GOLD","RaifuLostFieldsenvyb",true,
-        "515486d54abac2a4694e34cb1b31d18f","RaifuLostFieldsenvyb"),
-    new LevelInformation("ENVY - CASTLE MANIAC","RaifuCastleManiacTheReal",true,
-        "515486d54abac2a4694e34cb1b31d18f","RaifuCastleManiacTheReal"),
-    new LevelInformation("ENVY - EVERY STAR IN THE SKY","RaifuEveryStarInTheSkyReal",true,
-        "515486d54abac2a4694e34cb1b31d18f","RaifuEveryStarInTheSkyReal"),
+
     new LevelInformation("AND THE CROWD GOES WILD","Rude.Jam.cool.level",true,
         "e11a91fdcdd962245910c68dc25debea","Rude.Jam.cool.level"),
     new LevelInformation("THE TIMESPLICER","RedNova.Willem.Collab",true,
         "8aa2fc0fb7912c44ba021571926f273b","RedNova.Willem.Collab"),
+    new LevelInformation("HEART OF THE MACHINE","bobot.hellfacility.hotm",true,
+        "255ce156d5ae53c449106c1a31ed384a","bobot.hellfacility.hotm"),
+    new LevelInformation("BLOODY TEARS","riko.uk.bloodytears",true,
+        "6d50b188a4aa7164f8c49df7607eb274","riko.uk.bloodytears"),
+    new LevelInformation("CASTLE ON THE HILL","holaSmallkloon.movingcastle.castleonthehill",true,
+        "5f7897e6b97ec5449b4f0e4dc35f9e9f","holaSmallkloon.movingcastle.castleonthehill")
 
 );
+
+// Project Purgatorio
+$mapPools['purgatorio'] = array(
+    new LevelInformation("RUBICON - CARCASS","remphase.hydraxous.rubicon.first",true,
+        "c787a9514436db941be69ef24af53010","remphase.hydraxous.rubicon.first"),
+    new LevelInformation("RUBICON - BOTTOMLESS PIT","remphase.hydraxous.rubicon.second",true,
+        "c787a9514436db941be69ef24af53010","remphase.hydraxous.rubicon.second"),
+    new LevelInformation("ENVY - LOST FIELDS OF GOLD","RaifuLostFieldsenvyb",true,
+        "515486d54abac2a4694e34cb1b31d18f","RaifuLostFieldsenvyb"),
+    new LevelInformation("ENVY - PALACE OF BLACK SPIRES","raifuenvypalaceforbundle",true,
+        "515486d54abac2a4694e34cb1b31d18f","raifuenvypalaceforbundle"),
+    new LevelInformation("ENVY - CASTLE MANIAC","RaifuCastleManiacTheReal",true,
+        "515486d54abac2a4694e34cb1b31d18f","RaifuCastleManiacTheReal"),
+    new LevelInformation("ENVY - EVERY STAR IN THE SKY","RaifuEveryStarInTheSkyReal",true,
+        "515486d54abac2a4694e34cb1b31d18f","RaifuEveryStarInTheSkyReal"),
+    new LevelInformation("INDULGENCE - THE DEATH OF PARADIGM","mag.indulgence.thedeathofparadigm",true,
+        "31cdd0834c3ac504c8313dcb76ec6545","mag.indulgence.thedeathofparadigm")
+)
 
 
 ?>
