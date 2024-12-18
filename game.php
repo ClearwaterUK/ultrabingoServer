@@ -132,10 +132,11 @@ class GameSettings
     public int $maxPlayers;
     public int $maxTeams;
     public int $teamComposition;
-    public bool $requiresPRank;
     public int $gameType;
     public int $difficulty;
     public int $gridSize;
+    public bool $requiresPRank;
+    public bool $disableCampaignAltExits;
 
     public $selectedMapPools;
 
@@ -147,11 +148,12 @@ class GameSettings
     {
         $this->maxPlayers = 8;
         $this->maxTeams = 4;
-        $this->teamComposition = 0; //Randomised teams by default
-        $this->gridSize = 0; //3x3 by default
-        $this->gameType = 0; //Time by default
-        $this->difficulty = 2; //Standard by default
-        $this->requiresPRank = false;
+        $this->teamComposition = 0;             //Randomised teams by default
+        $this->gridSize = 0;                    //3x3 by default
+        $this->gameType = 0;                    //Time by default
+        $this->difficulty = 2;                  //Standard by default
+        $this->requiresPRank = false;           //P-Rank not requried by default
+        $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
     }
@@ -481,6 +483,7 @@ class GameController
     public function updateGameSettings($settings):void
     {
         $wereTeamsReset = false;
+        var_export($settings);
 
         if(array_key_exists($settings['roomId'],$this->currentGames))
         {
@@ -490,11 +493,11 @@ class GameController
             $newSettings->maxPlayers = $settings['maxPlayers'];
             $newSettings->maxTeams = $settings['maxTeams'];
             $newSettings->teamComposition = $settings['teamComposition'];
-            $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->gridSize = $settings['gridSize'];
-            $newSettings->teamComposition = $settings['teamComposition'];
+            $newSettings->requiresPRank = $settings['PRankRequired'];
+            $newSettings->disableCampaignAltExits = $settings['disableCampaignAltExits'];
             $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
             $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
             $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;
@@ -510,7 +513,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$wereTeamsReset);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$wereTeamsReset);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             updateGameSettings($settings['roomId'],$newSettings);
