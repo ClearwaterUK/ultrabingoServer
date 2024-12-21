@@ -17,7 +17,6 @@ require_once('functions.php');
 $networkMessageFolder = glob(__DIR__.'/NetworkMessages/*.php');
 foreach($networkMessageFolder as $file)
 {
-    echo("Loading ".$file."\n");
     require_once $file;
 }
 
@@ -48,6 +47,7 @@ require_once (__DIR__.'/levels.php');
 
 logInfo("Initialising DB configuration");
 require_once (__DIR__.'/DB.php');
+clearTables();
 
 logInfo("Starting up game coordinator");
 require_once(__DIR__.'/game.php');

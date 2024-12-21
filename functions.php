@@ -34,14 +34,8 @@ function createRoomInDatabase($roomData)
 {
     global $dbc;
     try {
-        $data = new RoomDataDB($roomData);
-
-        $testPass = "testPassword";
-        $testPlayer = "testPlayer";
-
-        $request = $dbc->prepare('INSERT INTO currentGames(R_PASSWORD,R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,?,1,0,8,4,0,0,0,0,2,0,0)');
-        $request->bindParam(1,$testPass,PDO::PARAM_STR);
-        $request->bindParam(2,$testPlayer,PDO::PARAM_STR);
+        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,1,0,8,4,0,0,0,0,2,0,0)');
+        $request->bindParam(1,$roomData['hostSteamId'],PDO::PARAM_STR);
         $request->execute();
 
         $request2 = $dbc->prepare("SELECT R_ID FROM currentGames ORDER BY R_ID DESC LIMIT 1");
@@ -51,7 +45,7 @@ function createRoomInDatabase($roomData)
     }
     catch(Exception $e)
     {
-        echo($e->getMessage());
+        logError($e->getMessage());
         return 0;
     }
 }
@@ -81,7 +75,6 @@ function verifyModList($modList,$steamId)
 
 }
 
-
 //TODO: Move this to DB.php
 function lookForGame($roomId)
 {
@@ -110,7 +103,6 @@ function removeGame($roomId)
     $request->bindParam(1,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
-
 
 function startGameInDB(int $roomId)
 {
@@ -161,46 +153,20 @@ function updateRoomJoinPermission(int $roomId, int $joinable)
     $request->execute();
 }
 
-function addToConnectionTable($connection, $roomId,$username="defaultUser")
+
+function getPlayerFromConnectionTable($connectionHash)
 {
-    global $connectionLog;
+    global $dbc;
 
-    $connectionHash = spl_object_hash($connection);
-    if(isset($connectionLog[$connectionHash]))
+    $request = $dbc->prepare("SELECT C_ROOMID, C_USERNAME,C_STEAMID FROM activeConnections WHERE C_CONNECTION_HASH = ?");
+    $request->bindParam(1,$connectionHash,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetch();
+
+    if($res && count($res) > 0)
     {
-        logWarn("Associated SteamID already exists in our log, overwriting");
-    }
-
-    $connectionLog[$connectionHash] = array($roomId,$username);
-
-    logWarn("Concurrent connections is now: ".count($connectionLog));
-    print_r($connectionLog);
-}
-
-function dropFromConnectionTable($connection)
-{
-    global $connectionLog;
-
-    $connectionHash = spl_object_hash($connection);
-
-    if(!isset($connectionLog[$connectionHash]))
-    {
-        logWarn("Associated SteamID doesn't exist in our log...");
-    }
-
-    unset($connectionLog[$connectionHash]);
-    logWarn("Concurrent connections is now: ".count($connectionLog));
-    print_r($connectionLog);
-}
-
-function getPlayerFromConnectionTable($connection)
-{
-    global $connectionLog;
-
-    $connectionHash = spl_object_hash($connection);
-    if(isset($connectionLog[$connectionHash]))
-    {
-       return $connectionLog[$connectionHash];
+        return array($res[0],$res[1],$res[2]);
     }
     else
     {
@@ -209,28 +175,78 @@ function getPlayerFromConnectionTable($connection)
     }
 }
 
-function addToUsernameLookupTable($steamId,$username)
+
+function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$roomId)
 {
-    global $steamIdToUsernameTable;
+    global $dbc;
 
-    if(isset($steamIdToUsernameTable[$steamId]))
-    {
-        logWarn("Associated SteamID already exists in our log, overwriting");
-    }
+    $connectionHash = md5(strval($connection));
+    $ticketHash = password_hash($steamTicket,PASSWORD_BCRYPT);
 
-    $steamIdToUsernameTable[$steamId] = $username;
+    $isHostReq = $dbc->prepare("SELECT R_ID, R_HOSTEDBY from currentGames where R_ID = ?");
+    $isHostReq->bindParam(1,$roomId,PDO::PARAM_INT);
+    $isHostReq->execute();
+    $res = $isHostReq->fetch();
+    $isHost = ($res[1] == $steamId);
+
+    $request = $dbc->prepare("INSERT INTO activeConnections
+    (C_CONNECTION_HASH,C_TICKET, C_STEAMID,C_USERNAME,C_ROOMID,C_ISHOST) VALUES (?,?,?,?,?,?)");
+
+    $request->bindParam(1,$connectionHash,PDO::PARAM_STR);
+    $request->bindParam(2,$ticketHash,PDO::PARAM_STR);
+    $request->bindParam(3,$steamId,PDO::PARAM_STR);
+    $request->bindParam(4,$steamUsername,PDO::PARAM_STR);
+    $request->bindParam(5,$roomId,PDO::PARAM_INT);
+    $request->bindParam(6,$isHost,PDO::PARAM_BOOL);
+
+    $request->execute();
 }
 
-function dropFromUsernameLookupTable($steamId)
+function verifyConnection($steamTicket,$checkHost=false)
 {
-    global $steamIdToUsernameTable;
-
-    if(!isset($steamIdToUsernameTable[$steamId]))
+    global $dbc;
+    $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeconnections WHERE C_STEAMID = ?");
+    $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
+    $ticketRequest->execute();
+    $res = $ticketRequest->fetch();
+    if($res && count($res) > 0)
     {
-        logWarn("Associated SteamID doesn't exist in our log...");
+        //Verify ticket hash matches what's in DB.
+        $ticketMatch = password_verify($steamTicket['steamTicket'],$res[0]);
+        //Verify given steamID is in the game id that it's sending messages to.
+        $gameMatch = $steamTicket['gameId'] == $res[2];
+        //If requested, verify if the steamID is the host of the game we're sending messages to.
+        $hostMatch = ($checkHost ? ($res[3] == 1) : true);
+
+        return ($ticketMatch && $gameMatch && $hostMatch);
+
+    }
+    else
+    {
+        return false;
     }
 
-    unset($steamIdToUsernameTable[$steamId]);
+    return true;
+}
+
+function unregisterConnection($steamId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("DELETE FROM activeConnections WHERE C_STEAMID = ?");
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+    $request->execute();
+}
+
+function clearTables()
+{
+    global $dbc;
+    $tables = ["currentGames","activeConnections"];
+    foreach($tables as $table)
+    {
+        $request = $dbc->prepare("TRUNCATE ".$table);
+        $request->execute();
+    }
 }
 
 ?>

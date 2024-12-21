@@ -18,7 +18,7 @@ function initialiseDatabase()
     }
     catch(PDOException $e)
     {
-        echo($e->getMessage()."\n");
+        logError($e->getMessage());
         die("DB connection failed\n");
     }
 }

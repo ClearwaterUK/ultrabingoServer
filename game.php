@@ -217,7 +217,7 @@ class Game
     // $isHost: Bool indicating if the $player being added is the host.
     public function addPlayerToGame(GamePlayer $player, string $playerSteamId, bool $isHost=false): void
     {
-        echo("Adding ".$player->username. " (".$player->steamId.") to game ".$this->gameId."\n");
+        logInfo("Adding ".$player->username. " (".$player->steamId.") to game ".$this->gameId);
 
         $this->currentPlayers[$playerSteamId] = $player;
         if($isHost)
@@ -247,7 +247,7 @@ class Game
 
     public function updateTeams($teamDict):void
     {
-        echo("Manually setting teams for room ".$this->gameId." and locking room\n");
+        logInfo("Manually setting teams for room ".$this->gameId." and locking room");
         $this->gameSettings->presetTeams = $teamDict;
         $this->gameSettings->hasManuallySetTeams = true;
 
@@ -264,7 +264,7 @@ class Game
 
     public function clearTeams():void
     {
-        echo("Clearing set teams for room ".$this->gameId." and unlocking room\n");
+        logInfo("Clearing set teams for room ".$this->gameId." and unlocking room");
         unset($this->gameSettings->presetTeams);
         $this->gameSettings->hasManuallySetTeams = false;
         updateRoomJoinPermission($this->gameId,1);
@@ -347,7 +347,7 @@ class Game
 
         if($horizontal || $vertical || $diagonalDown || $diagonalUp)
         {
-            echo("WE GOT A BINGO!!\n");
+            logWarn("BINGO!");
         }
         return($horizontal || $vertical || $diagonalUp || $diagonalDown);
     }
@@ -371,7 +371,7 @@ class Game
             $this->putPlayerInTeam($plr->username,$team);
         }
 
-        echo("Set preset teams for game ".$this->gameId.":\n");
+        logMessage("Set preset teams for game ".$this->gameId.":");
         var_export($this->teams);
 
     }
@@ -404,7 +404,7 @@ class Game
             unset($indexList[$indice]);
         }
 
-        echo("Set teams for game ".$this->gameId.":\n");
+        logInfo("Set teams for game ".$this->gameId.":\n");
         var_export($this->teams);
     }
 
@@ -420,7 +420,7 @@ class GameController
 
     public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId)
     {
-        echo("Creating game with id ".$gameId.", host is ".$hostSteamName.", SteamID is ".$hostSteamId."\n");
+        logInfo("Creating game with id ".$gameId.", host is ".$hostSteamName.", SteamID is ".$hostSteamId);
         $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId,$hostSteamId);
         $this->currentGames[$gameId] = $gameToCreate;
 
@@ -434,22 +434,21 @@ class GameController
 
         if(lookForGame($gameId) <> null)
         {
-            echo("Game with given id found\n");
             //Make sure the game isn't already full or hasn't already started.
             if($gameLookup['R_CURRENTPLAYERS'] == $gameLookup['R_MAXPLAYERS'])
             {
-                echo("Game is already full\n");
+                logWarn("Game is already full");
                 return -4;
             }
             //If the game has manually set teams, make sure the host is still allowing players (teams have not been locked in):
             if($gameLookup['R_TEAMCOMPOSITION'] == 1 && $gameLookup['R_JOINABLE'] == 0)
             {
-                echo("Game not accepting new players");
+                logWarn("Game not accepting new players");
                 return -3;
             }
             if($gameLookup['R_HASSTARTED'] == 1)
             {
-                echo("Game has already started\n");
+                logWarn("Game has already started");
                 return -2;
             }
 
@@ -464,7 +463,6 @@ class GameController
             {
                 if($plrSteamId <> $playerSteamId)
                 {
-                    echo("Sending join notif to ".$playerObj->username."\n");
                     sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
@@ -483,8 +481,6 @@ class GameController
     public function updateGameSettings($settings):void
     {
         $wereTeamsReset = false;
-        var_export($settings);
-
         if(array_key_exists($settings['roomId'],$this->currentGames))
         {
             $gameToUpdate = $this->currentGames[$settings['roomId']];
@@ -504,7 +500,6 @@ class GameController
 
             if($newSettings->teamComposition == 0 && $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams)
             {
-                echo("Teams were set but host is switching back to randomised, resetting teams\n");
                 $newSettings->hasManuallySetTeams = false;
                 $newSettings->presetTeams = null;
                 updateRoomJoinPermission($settings['roomId'],1);
@@ -528,7 +523,7 @@ class GameController
         }
         else
         {
-            echo("Trying to update settings for game id ".$settings['roomId']." but doesn't exist!`\n");
+            logError("Trying to update settings for game id ".$settings['roomId']." but doesn't exist!");
         }
     }
 
@@ -540,12 +535,10 @@ class GameController
 
             if($gameToStart->gameSettings->hasManuallySetTeams)
             {
-                echo("Splitting teams based on host-defined preset\n");
                 $gameToStart->setTeamsFromPreset($gameToStart->gameSettings->presetTeams);
             }
             else
             {
-                echo("Splitting all current players into teams\n");
                 $gameToStart->setTeams();
             }
 
@@ -557,10 +550,10 @@ class GameController
 
             //Mark the start time
             $gameToStart->startTime = new DateTime();
-            echo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A") . "\n");
+            logInfo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A") . "\n");
 
             //Send the game start signal to all players in the game
-            echo("Telling all players of game ".$gameToStart->gameId . " to start\n");
+            logInfo("Telling all players of game ".$gameToStart->gameId . " to start\n");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
                 $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
@@ -571,7 +564,7 @@ class GameController
         }
         else
         {
-            echo("Game with id ".$gameId." does not exist\n");
+            logError("Game with id ".$gameId." does not exist\n");
         }
     }
 
@@ -582,25 +575,23 @@ class GameController
             $currentGame = $this->currentGames[$gameId];
             foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
                 if ($playerSteamId == $steamId) {
-                    echo("Found our player's steamID\n");
                     if($playerSteamId == $currentGame->gameHost)
                     {
-                        echo("Player to remove is the host, deleting the whole game!\n");
+                        logWarn("Player to remove is the host, deleting the whole game!\n");
                         return 1;
                     }
                     else
                     {
-                        echo("Normal player, removing\n");
                         return 0;
                     }
                 }
             }
-            echo("Could not find the player to remove in specified game\n");
+            logError("Could not find the player to remove in specified game");
             return -1;
         }
         else
         {
-            echo("Could not find the specified game\n");
+            logError("Could not find the specified game");
             return -2;
         }
     }
@@ -643,6 +634,10 @@ class GameController
                 }
             }
         }
+
+        //Unregister the connection from the DB.
+        unregisterConnection($dcNotification->steamId);
+
         unset($game->currentPlayers[$indexToRemove]);
     }
     
@@ -655,8 +650,6 @@ class GameController
 
         $em = new EncapsulatedMessage("ServerDisconnection",json_encode($dcMessage));
 
-        //var_export($game->currentPlayers);
-
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
             //Don't send dc message to the host as they've already DC'd before we clean up the game.
@@ -666,17 +659,19 @@ class GameController
                 $playerObj->websocketConnection->close(1000,$disconnectReason);
             }
 
-            dropFromConnectionTable($playerObj->websocketConnection);
+            //Unregister the connection from the DB.
+            unregisterConnection($playerSteamId);
+
             unset($game->currentPlayers[$playerSteamId]);
         }
     }
 
     public function destroyGame(Int $gameId):void
     {
-        echo("Destroying game id ".$gameId . " from game coordinator\n");
+        logWarn("Destroying game id ".$gameId . " from game coordinator");
         unset($this->currentGames[$gameId]);
 
-        echo("Removing entry from DB\n");
+        logWarn("Removing entry from DB");
         removeGame($gameId);
     }
 
@@ -688,33 +683,26 @@ class GameController
         if(array_key_exists($gameId,$this->currentGames))
         {
             $currentGame = $this->currentGames[$gameId];
-            // Check if the player is connected to the currently connected game.
-            foreach($currentGame->currentPlayers as $playerSteamId => &$player)
+            $submittedCoords = $submissionData['row']."-".$submissionData['column'];
+
+            logInfo("Player is submitting at position ".$submittedCoords." which in our current card, level ID is ".$currentGame->grid->levelTable[$submittedCoords]->levelId);
+
+            //Check that the submitted coords match.
+            $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
+            if($levelInCard->levelId == $submissionData['levelId'])
             {
-                if($playerSteamId == $submissionData['steamId'])
-                {
-                    $submittedCoords = $submissionData['row']."-".$submissionData['column'];
-
-                    echo("Player is submitting at position ".$submittedCoords." which in our current card, level ID is ".$currentGame->grid->levelTable[$submittedCoords]->levelId."\n");
-
-                    //Check that the submitted coords match.
-                    $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-                    if($levelInCard->levelId == $submissionData['levelId'])
-                    {
-                        echo("Level ID matches, pre-submission all validated\n");
-                        return true;
-                    }
-                    else
-                    {
-                        echo("Level ID doesn't match!\n");
-                        return false;
-                    }
-                }
+                logMessage("Level ID matches, pre-submission all validated\n");
+                return true;
             }
-            echo("Couldn't find the player SteamID in the game's roster!\n");
+            else
+            {
+                logWarn("Level ID doesn't match!\n");
+                return false;
+            }
         }
-        else{
-            echo("Room id " .$gameId. " was not found in list of current games\n");
+        else
+        {
+            logError("Room id " .$gameId. " was not found in list of current games\n");
         }
         return false;
     }
@@ -744,7 +732,7 @@ class GameController
 
         if($levelInCard->claimedBy == Team::NONE)
         {
-            echo("Level is unclaimed, claiming for their team\n");
+            logInfo("Level is unclaimed, claiming for their team");
             $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
             $levelInCard->personToBeat = $submissionData['playerName'];
             $levelInCard->timeToBeat = $submissionData['time'];
@@ -769,7 +757,7 @@ class GameController
                 //Same team/person
                 if($levelInCard->claimedBy == Team::tryFrom($submissionData['team']))
                 {
-                    echo("Level already claimed by player/team, improving\n");
+                    logInfo("Level already claimed by player/team, improving");
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
                     $levelInCard->styleToBeat = $submissionData['style'];
@@ -783,7 +771,7 @@ class GameController
                 }
                 else
                 {
-                    echo("Reclaiming level from previous team\n");
+                    logInfo("Reclaiming level from previous team");
                     $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
@@ -797,7 +785,7 @@ class GameController
             }
             else
             {
-                echo("Run did not beat current criteria\n");
+                logWarn("Run did not beat current criteria");
                 return -1;
             }
         }
@@ -819,7 +807,7 @@ class GameController
     public function __construct()
     {
         date_default_timezone_set("Europe/Paris");
-        echo("Game coordinator started at: ".date("Y-m-d h:i:s A")."\n");
+        logMessage("Game coordinator started at: ".date("Y-m-d h:i:s A"));
         $this->currentGames = [];
     }
 }

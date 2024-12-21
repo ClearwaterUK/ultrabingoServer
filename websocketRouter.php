@@ -1,32 +1,24 @@
 <?php
 
-function enumerateConnections():void
-{
-    global $connectionLog;
-    echo("There are ".count($connectionLog)." active connections\n");
-}
-
 function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception):void
 {
     global $gameCoordinator;
-    global $steamIdToUsernameTable;
 
     logError("Unclean disconnect from client - lost connection or alt-f4'd?" );
     logError($exception->getMessage() . " (".$exception->getCode().")");
 
+    $connectionHash = md5(strval($connection));
+
     //Remove the dropped connection from the game that it was in.
-    $gameDetails = getPlayerFromConnectionTable($connection);
+    $gameDetails = getPlayerFromConnectionTable($connectionHash);
     if($gameDetails != null)
     {
         //Go into the room id
         $associatedGame = $gameCoordinator->currentGames[$gameDetails[0]];
         $username = $gameDetails[1];
+        $steamId = $gameDetails[2];
 
         LogWarn("Player who timed out:".$username);
-
-        print_r($steamIdToUsernameTable);
-        $steamId = array_search($username,$steamIdToUsernameTable);
-
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
         if($associatedGame->gameHost == $steamId)
@@ -39,7 +31,6 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         else
         {
             $indexToUnset = "";
-            //print_r($associatedGame->currentPlayers);
             foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
             {
                 if($playerObj->username === $username)
@@ -55,22 +46,18 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             unset($associatedGame->currentPlayers[$indexToUnset]);
         }
-        dropFromUsernameLookupTable($steamId);
-        dropFromConnectionTable($connection);
+        unregisterConnection($steamId);
     }
 }
 
 function onClientConnect():void
 {
-    logMessage("New connection");
-    enumerateConnections();
+    logMessage("Incoming connection");
 }
 
 function onClientDisconnect($server,$connection):void
 {
-    global $connectionLog;
     logMessage("Client has disconnected");
-    enumerateConnections();
 }
 
 function onMessageRecieved($message,$connection):void
@@ -93,8 +80,6 @@ function onMessageRecieved($message,$connection):void
                 $crr = new CreateRoomResponse($status,$roomId,$game);
                 $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
 
-                addToConnectionTable($connection,$roomId,$receivedJson["hostSteamName"]);
-                addToUsernameLookupTable($receivedJson['hostSteamId'],$receivedJson["hostSteamName"]);
             }
             else{
                 logError("Failed to create room!");
@@ -122,26 +107,26 @@ function onMessageRecieved($message,$connection):void
             $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
             sendEncodedMessage($em,$connection);
 
-            if($status == 0)
-            {
-                logMessage("Adding to connection log");
-                addToConnectionTable($connection,$roomId,$receivedJson['username']);
-                addToUsernameLookupTable($receivedJson['steamId'],$receivedJson['username']);
-            }
             break;
         }
 
         case "UpdateRoomSettings":
         {
-            logMessage("Updating settings for room ".$receivedJson['roomId']);
-            $gameCoordinator->updateGameSettings($receivedJson);
+            if(verifyConnection($receivedJson['ticket'],true))
+            {
+                logMessage("Updating settings for room ".$receivedJson['roomId']);
+                $gameCoordinator->updateGameSettings($receivedJson);
+            }
             break;
         }
 
         case "StartGame":
         {
-            logWarn("Starting game ".$receivedJson['roomId']);
-            $gameCoordinator->startGame($receivedJson['roomId']);
+            if(verifyConnection($receivedJson['ticket'],true))
+            {
+                logWarn("Starting game ".$receivedJson['roomId']);
+                $gameCoordinator->startGame($receivedJson['roomId']);
+            }
             break;
         }
 
@@ -177,7 +162,15 @@ function onMessageRecieved($message,$connection):void
         case "SubmitRun":
         {
             $gameId = $receivedJson['gameId'];
+
             logMessage("Player is submitting run in game ".$receivedJson['gameId']);
+
+            if(!verifyConnection($receivedJson['ticket']))
+            {
+                logWarn("Invalid Steam ticket or player is not in game, rejecting submission");
+                return;
+            }
+
             if($gameCoordinator->verifyRunSubmission($receivedJson))
             {
                 $submitResult = $gameCoordinator->submitRun($receivedJson);
@@ -227,49 +220,64 @@ function onMessageRecieved($message,$connection):void
         }
         case "UpdateMapPool":
         {
-            $gameId = $receivedJson['gameId'];
-            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            if(verifyConnection($receivedJson['ticket'],true))
             {
-                logMessage("Updating map pools for game ".$gameId);
-                $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
+                $gameId = $receivedJson['gameId'];
+                if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                {
+                    logMessage("Updating map pools for game ".$gameId);
+                    $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
+                }
+                else
+                {
+                    logError("Tried to update map pools for game ".$gameId."but it doesn't exist!");
+                }
+                break;
             }
-            else
-            {
-                logError("Tried to update map pools for game ".$gameId."but it doesn't exist!");
-            }
-            break;
         }
         case "UpdateTeamSettings":
         {
-            $gameId = $receivedJson['gameId'];
-            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            if(verifyConnection($receivedJson['ticket'],true))
             {
-                logMessage("Updating teams for game ".$gameId);
-                $gameCoordinator->currentGames[$gameId]->updateTeams($receivedJson["teams"]);
+                $gameId = $receivedJson['gameId'];
+                if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                {
+                    logMessage("Updating teams for game ".$gameId);
+                    $gameCoordinator->currentGames[$gameId]->updateTeams($receivedJson["teams"]);
+                }
+                else
+                {
+                    logError("Tried to update teams for game ".$gameId."but it doesn't exist!");
+                }
+                break;
             }
-            else
-            {
-                logError("Tried to update teams for game ".$gameId."but it doesn't exist!");
-            }
-            break;
         }
         case "ClearTeams":
         {
-            $gameId = $receivedJson['gameId'];
-            if(array_key_exists($gameId,$gameCoordinator->currentGames))
+            if(verifyConnection($receivedJson['ticket'],true))
             {
-                logMessage("Clearing teams of game ".$gameId);
-                $gameCoordinator->currentGames[$gameId]->clearTeams();
+                $gameId = $receivedJson['gameId'];
+                if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                {
+                    logMessage("Clearing teams of game ".$gameId);
+                    $gameCoordinator->currentGames[$gameId]->clearTeams();
+                }
+                else
+                {
+                    logError("Tried to clear teams for game ".$gameId."but it doesn't exist!");
+                }
             }
-            else
-            {
-                logError("Tried to clear teams for game ".$gameId."but it doesn't exist!");
-            }
+
             break;
         }
         case "CheatActivation":
         {
             $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
+            break;
+        }
+        case "RegisterTicket":
+        {
+            registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
             break;
         }
         case "VerifyModList":
@@ -282,6 +290,5 @@ function onMessageRecieved($message,$connection):void
         }
         default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
     }
-
 }
 ?>
