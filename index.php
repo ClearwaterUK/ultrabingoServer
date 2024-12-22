@@ -69,7 +69,6 @@ try {
             onMessageRecieved($message->getContent(), $connection);
         })
         ->onPing(function ($client, $connection, $message) {
-            logWarn("Pong");
             $pong = new Pong();
             $em = new EncapsulatedMessage("Pong", json_encode($pong));
             sendEncodedMessage($em, $connection);
