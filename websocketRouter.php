@@ -95,7 +95,7 @@ function onMessageRecieved($message,$connection):void
 
         case "JoinRoom":
         {
-            logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']."\n");
+            logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']);
 
             $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
 

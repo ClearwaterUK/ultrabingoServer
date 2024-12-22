@@ -58,7 +58,6 @@ function verifyModList($modList,$steamId)
     logMessage($steamId);
     foreach($modList as $mod)
     {
-        logWarn($mod);
         if($mod == "UnityExplorer" && !($steamId == "76561198128998723"))
         {
             logWarn("Client has UnityExplorer but isn't dev!");
@@ -72,10 +71,8 @@ function verifyModList($modList,$steamId)
     }
     logMessage("Mod list check ok");
     return true;
-
 }
 
-//TODO: Move this to DB.php
 function lookForGame($roomId)
 {
     global $dbc;

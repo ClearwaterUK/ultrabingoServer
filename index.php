@@ -84,7 +84,7 @@ try {
         ->start();
 } catch (Throwable $e) {
     logError("Server error!");
-    logError($e->getMessage()."(".$e->getFile().", ".$e->getLine().")\n");
+    logError($e->getMessage()."(".$e->getFile().", ".$e->getLine().")");
 }
 
 ?>

@@ -404,7 +404,7 @@ class Game
             unset($indexList[$indice]);
         }
 
-        logInfo("Set teams for game ".$this->gameId.":\n");
+        logInfo("Set teams for game ".$this->gameId.":");
         var_export($this->teams);
     }
 
@@ -550,10 +550,10 @@ class GameController
 
             //Mark the start time
             $gameToStart->startTime = new DateTime();
-            logInfo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A") . "\n");
+            logInfo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A"));
 
             //Send the game start signal to all players in the game
-            logInfo("Telling all players of game ".$gameToStart->gameId . " to start\n");
+            logInfo("Telling all players of game ".$gameToStart->gameId . " to start");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
                 $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
@@ -564,7 +564,7 @@ class GameController
         }
         else
         {
-            logError("Game with id ".$gameId." does not exist\n");
+            logError("Game with id ".$gameId." does not exist");
         }
     }
 
@@ -577,7 +577,7 @@ class GameController
                 if ($playerSteamId == $steamId) {
                     if($playerSteamId == $currentGame->gameHost)
                     {
-                        logWarn("Player to remove is the host, deleting the whole game!\n");
+                        logWarn("Player to remove is the host, deleting the whole game!");
                         return 1;
                     }
                     else
@@ -690,18 +690,18 @@ class GameController
             $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
             if($levelInCard->levelId == $submissionData['levelId'])
             {
-                logMessage("Level ID matches, pre-submission all validated\n");
+                logMessage("Level ID matches, pre-submission all validated");
                 return true;
             }
             else
             {
-                logWarn("Level ID doesn't match!\n");
+                logWarn("Level ID doesn't match!");
                 return false;
             }
         }
         else
         {
-            logError("Room id " .$gameId. " was not found in list of current games\n");
+            logError("Room id " .$gameId. " was not found in list of current games");
         }
         return false;
     }
