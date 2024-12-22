@@ -206,7 +206,7 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
 function verifyConnection($steamTicket,$checkHost=false)
 {
     global $dbc;
-    $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeconnections WHERE C_STEAMID = ?");
+    $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ?");
     $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
     $ticketRequest->execute();
     $res = $ticketRequest->fetch();
