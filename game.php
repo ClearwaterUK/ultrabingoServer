@@ -623,7 +623,6 @@ class GameController
             {
                 //Remove the player from the game.
                 $indexToRemove = $playerSteamId;
-                dropFromConnectionTable($playerObj->websocketConnection);
             }
             else
             {
