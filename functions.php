@@ -182,6 +182,7 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
 
     $connectionHash = md5(strval($connection));
     $ticketHash = password_hash($steamTicket,PASSWORD_BCRYPT);
+    $steamUsername = sanitiseUsername($steamUsername);
 
     $isHostReq = $dbc->prepare("SELECT R_ID, R_HOSTEDBY from currentGames where R_ID = ?");
     $isHostReq->bindParam(1,$roomId,PDO::PARAM_INT);
@@ -219,7 +220,6 @@ function verifyConnection($steamTicket,$checkHost=false)
         $hostMatch = ($checkHost ? ($res[3] == 1) : true);
 
         return ($ticketMatch && $gameMatch && $hostMatch);
-
     }
     else
     {
@@ -247,6 +247,30 @@ function clearTables()
         $request = $dbc->prepare("TRUNCATE ".$table);
         $request->execute();
     }
+}
+
+//Borrowed from SO: https://stackoverflow.com/questions/61481567/remove-emojis-from-string
+function sanitiseUsername($inputUsername)
+{
+    $sanitisedUsername = "";
+    // Match Emoticons
+    $regexEmoticons = '/[\x{1F600}-\x{1F64F}]/u';
+    $sanitisedUsername = preg_replace($regexEmoticons, '', $inputUsername);
+
+    // Match Miscellaneous Symbols and Pictographs
+    $regexSymbols = '/[\x{1F300}-\x{1F5FF}]/u';
+    $sanitisedUsername = preg_replace($regexSymbols, '', $sanitisedUsername);
+
+    // Match Transport And Map Symbols
+    $regexTransport = '/[\x{1F680}-\x{1F6FF}]/u';
+    $sanitisedUsername = preg_replace($regexTransport, '', $sanitisedUsername);
+
+    // Match flags (iOS)
+    $regexTransport = '/[\x{1F1E0}-\x{1F1FF}]/u';
+    $sanitisedUsername = preg_replace($regexTransport, '', $sanitisedUsername);
+
+    return $sanitisedUsername;
+
 }
 
 ?>
