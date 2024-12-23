@@ -202,6 +202,7 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
 
 function verifyConnection($steamTicket,$checkHost=false)
 {
+    logWarn("Verifying connection");
     global $dbc;
     $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ?");
     $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
@@ -216,10 +217,12 @@ function verifyConnection($steamTicket,$checkHost=false)
         //If requested, verify if the steamID is the host of the game we're sending messages to.
         $hostMatch = ($checkHost ? ($res[3] == 1) : true);
 
+        logInfo("Connection valid");
         return ($ticketMatch && $gameMatch && $hostMatch);
     }
     else
     {
+        logError("Connection invalid!");
         return false;
     }
 
@@ -249,6 +252,7 @@ function clearTables()
 //Borrowed from SO: https://stackoverflow.com/questions/61481567/remove-emojis-from-string
 function sanitiseUsername($inputUsername)
 {
+    logWarn("Sanitising username");
     $sanitisedUsername = "";
     // Match Emoticons
     $regexEmoticons = '/[\x{1F600}-\x{1F64F}]/u';
@@ -266,6 +270,7 @@ function sanitiseUsername($inputUsername)
     $regexTransport = '/[\x{1F1E0}-\x{1F1FF}]/u';
     $sanitisedUsername = preg_replace($regexTransport, '', $sanitisedUsername);
 
+    logWarn("Sanitising done");
     return $sanitisedUsername;
 
 }

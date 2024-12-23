@@ -77,6 +77,7 @@ function onMessageRecieved($message,$connection):void
     {
         case "CreateRoom":
         {
+            logWarn("Creating new game in DB");
             $roomId = createRoomInDatabase($receivedJson);
             if($roomId <> null && $roomId <> 0)
             {
@@ -239,8 +240,8 @@ function onMessageRecieved($message,$connection):void
                 {
                     logError("Tried to update map pools for game ".$gameId."but it doesn't exist!");
                 }
-                break;
             }
+            break;
         }
         case "UpdateTeamSettings":
         {
@@ -256,8 +257,8 @@ function onMessageRecieved($message,$connection):void
                 {
                     logError("Tried to update teams for game ".$gameId."but it doesn't exist!");
                 }
-                break;
             }
+            break;
         }
         case "ClearTeams":
         {
@@ -284,6 +285,7 @@ function onMessageRecieved($message,$connection):void
         }
         case "RegisterTicket":
         {
+            logWarn("Registering new connection");
             registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
             break;
         }
