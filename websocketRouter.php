@@ -58,6 +58,7 @@ function onClientConnect():void
 function onClientDisconnect($server,$connection):void
 {
     logMessage("Client has disconnected");
+    logMessage($server->getConnectionCount() . "active connections");
 }
 
 function onMessageRecieved($message,$connection):void
