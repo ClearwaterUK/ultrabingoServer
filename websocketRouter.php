@@ -50,15 +50,21 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
     }
 }
 
-function onClientConnect():void
+function enumerateServerConnections($server)
+{
+    logWarn($server->getConnectionCount() . " active connections");
+}
+
+function onClientConnect($server):void
 {
     logMessage("Incoming connection");
+    enumerateServerConnections($server);
 }
 
 function onClientDisconnect($server,$connection):void
 {
     logMessage("Client has disconnected");
-    logMessage($server->getConnectionCount() . "active connections");
+    enumerateServerConnections($server);
 }
 
 function onMessageRecieved($message,$connection):void

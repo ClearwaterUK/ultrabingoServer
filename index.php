@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
 //Can't do 8080 on local because 8080 is reserved by Steam.
 $PORT = 2052;
 
-$MAX_CONCURRENT_CONNECTIONS = 64;
+$MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
 
 $connectionLog = array();
@@ -66,8 +66,8 @@ try {
         ->addMiddleware(new WebSocket\Middleware\PingResponder())
         ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
         ->setTimeout($TIMEOUT)
-        ->onConnect(function () {
-            onClientConnect();
+        ->onConnect(function ($server,$connection,$request) {
+            onClientConnect($server);
         })
         ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
             onMessageRecieved($message->getContent(), $connection);
