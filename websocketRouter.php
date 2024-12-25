@@ -48,9 +48,10 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         }
         unregisterConnection($steamId);
     }
+    $connection->disconnect();
 }
 
-function enumerateServerConnections($server)
+function enumerateServerConnections($server):void
 {
     logWarn($server->getConnectionCount() . " active connections");
 }
@@ -65,6 +66,8 @@ function onClientDisconnect($server,$connection):void
 {
     logMessage("Client has disconnected");
     enumerateServerConnections($server);
+    if($connection->isConnected()) {$connection->disconnect();}
+
 }
 
 function onMessageRecieved($message,$connection):void
@@ -72,6 +75,11 @@ function onMessageRecieved($message,$connection):void
     global $gameCoordinator;
 
     $receivedJson = decodeMessage($message);
+    if(!isset($receivedJson["messageType"]))
+    {
+        logError("Message type was not defined, dropping message");
+        return;
+    }
     $messageType = $receivedJson["messageType"];
     switch($messageType)
     {
@@ -120,6 +128,7 @@ function onMessageRecieved($message,$connection):void
 
         case "UpdateRoomSettings":
         {
+            logWarn("Updating room settings");
             if(verifyConnection($receivedJson['ticket'],true))
             {
                 logMessage("Updating settings for room ".$receivedJson['roomId']);

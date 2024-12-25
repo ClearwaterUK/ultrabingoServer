@@ -177,6 +177,7 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
 {
     global $dbc;
 
+    logWarn("Performing register in DB");
     $connectionHash = md5(strval($connection));
     $ticketHash = password_hash($steamTicket,PASSWORD_BCRYPT);
     $steamUsername = sanitiseUsername($steamUsername);
@@ -198,6 +199,7 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
     $request->bindParam(6,$isHost,PDO::PARAM_BOOL);
 
     $request->execute();
+    logWarn("Register completed");
 }
 
 function verifyConnection($steamTicket,$checkHost=false)
