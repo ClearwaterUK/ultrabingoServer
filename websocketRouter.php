@@ -74,239 +74,255 @@ function onMessageRecieved($message,$connection):void
 {
     global $gameCoordinator;
 
+    $executionTime = 15;
+    set_time_limit($executionTime);
+
     $receivedJson = decodeMessage($message);
     if(!isset($receivedJson["messageType"]))
     {
         logError("Message type was not defined, dropping message");
         return;
     }
-    $messageType = $receivedJson["messageType"];
-    switch($messageType)
-    {
-        case "CreateRoom":
+
+    try {
+        $messageType = $receivedJson["messageType"];
+        switch($messageType)
         {
-            logWarn("Creating new game in DB");
-            $roomId = createRoomInDatabase($receivedJson);
-            if($roomId <> null && $roomId <> 0)
+            case "CreateRoom":
             {
-                //Create the room
-                $status = "ok";
-                $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
-                logMessage("Game created and set up with id ".$roomId);
-                $crr = new CreateRoomResponse($status,$roomId,$game);
-                $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
+                logWarn("Creating new game in DB");
+                $roomId = createRoomInDatabase($receivedJson);
+                if($roomId <> null && $roomId <> 0)
+                {
+                    //Create the room
+                    $status = "ok";
+                    $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
+                    logMessage("Game created and set up with id ".$roomId);
+                    $crr = new CreateRoomResponse($status,$roomId,$game);
+                    $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
 
-            }
-            else{
-                logError("Failed to create room!");
-                $status = "err";
-                $crr = new CreateRoomResponse($status,$roomId);
-                $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
-            }
+                }
+                else{
+                    logError("Failed to create room!");
+                    $status = "err";
+                    $crr = new CreateRoomResponse($status,$roomId);
+                    $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
+                }
 
-            //Send back the response to the client
-            sendEncodedMessage($em,$connection);
-            break;
-        }
-
-        case "JoinRoom":
-        {
-            logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']);
-
-            $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
-
-            $status = (gettype($gameToJoin) == "integer") ? $gameToJoin : 0;
-            $roomId = $receivedJson['roomId'];
-            $room = ($status == 0) ? $gameCoordinator->currentGames[$receivedJson['roomId']] : null;
-
-            $jrr = new JoinRoomResponse($status,$roomId,$room);
-            $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
-            sendEncodedMessage($em,$connection);
-
-            break;
-        }
-
-        case "UpdateRoomSettings":
-        {
-            logWarn("Updating room settings");
-            if(verifyConnection($receivedJson['ticket'],true))
-            {
-                logMessage("Updating settings for room ".$receivedJson['roomId']);
-                $gameCoordinator->updateGameSettings($receivedJson);
-            }
-            break;
-        }
-
-        case "StartGame":
-        {
-            if(verifyConnection($receivedJson['ticket'],true))
-            {
-                logWarn("Starting game ".$receivedJson['roomId']);
-                $gameCoordinator->startGame($receivedJson['roomId']);
-            }
-            break;
-        }
-
-        case "LeaveGame":
-        {
-            logMessage("Player wants to leave game ".$receivedJson['roomId']);
-            $checkResult = $gameCoordinator->checkPlayerBeforeRemoving($receivedJson['username'],$receivedJson['roomId'],$receivedJson['steamId']);
-            if($checkResult < 0)
-            {
-                logError("Unable to remove the specified player");
+                //Send back the response to the client
+                sendEncodedMessage($em,$connection);
                 break;
             }
-            else
-            {
-                //If the player is the host...
-                if($checkResult == 1)
-                {
-                    //...disconnect all players before deleting the game
-                    $gameCoordinator->disconnectAllPlayers($receivedJson['roomId'],$connection,"HOSTLEFTGAME");
 
-                    //Then delete the game.
-                    $gameCoordinator->destroyGame($receivedJson['roomId']);
+            case "JoinRoom":
+            {
+                logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']);
+
+                $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
+
+                $status = (gettype($gameToJoin) == "integer") ? $gameToJoin : 0;
+                $roomId = $receivedJson['roomId'];
+                $room = ($status == 0) ? $gameCoordinator->currentGames[$receivedJson['roomId']] : null;
+
+                $jrr = new JoinRoomResponse($status,$roomId,$room);
+                $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
+                sendEncodedMessage($em,$connection);
+
+                break;
+            }
+
+            case "UpdateRoomSettings":
+            {
+                logWarn("Updating room settings");
+                if(verifyConnection($receivedJson['ticket'],true))
+                {
+                    logMessage("Updating settings for room ".$receivedJson['roomId']);
+                    $gameCoordinator->updateGameSettings($receivedJson);
                 }
-                //If player is not the host, simply disconnect and remove just the player.
+                break;
+            }
+
+            case "StartGame":
+            {
+                if(verifyConnection($receivedJson['ticket'],true))
+                {
+                    logWarn("Starting game ".$receivedJson['roomId']);
+                    $gameCoordinator->startGame($receivedJson['roomId']);
+                }
+                break;
+            }
+
+            case "LeaveGame":
+            {
+                logMessage("Player wants to leave game ".$receivedJson['roomId']);
+                $checkResult = $gameCoordinator->checkPlayerBeforeRemoving($receivedJson['username'],$receivedJson['roomId'],$receivedJson['steamId']);
+                if($checkResult < 0)
+                {
+                    logError("Unable to remove the specified player");
+                    break;
+                }
                 else
                 {
-                    $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
-                }
-            }
-            break;
-        }
-
-        case "SubmitRun":
-        {
-            $gameId = $receivedJson['gameId'];
-
-            logMessage("Player is submitting run in game ".$receivedJson['gameId']);
-
-            if(!verifyConnection($receivedJson['ticket']))
-            {
-                logWarn("Invalid Steam ticket or player is not in game, rejecting submission");
-                return;
-            }
-
-            if($gameCoordinator->verifyRunSubmission($receivedJson))
-            {
-                $submitResult = $gameCoordinator->submitRun($receivedJson);
-                if($submitResult >= 0)
-                {
-                    //Check if the claimed level resulted in a bingo.
-                    $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
-
-                    $levelDisplayName = $gameCoordinator->currentGames[$gameId]->grid->levelTable[$receivedJson['row']."-".$receivedJson['column']]->levelName;
-
-                    $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
-
-                    foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
+                    //If the player is the host...
+                    if($checkResult == 1)
                     {
-                        $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                        sendEncodedMessage($message,$playerObj->websocketConnection);
+                        //...disconnect all players before deleting the game
+                        $gameCoordinator->disconnectAllPlayers($receivedJson['roomId'],$connection,"HOSTLEFTGAME");
+
+                        //Then delete the game.
+                        $gameCoordinator->destroyGame($receivedJson['roomId']);
                     }
-                    if($hasObtainedBingo)
+                    //If player is not the host, simply disconnect and remove just the player.
+                    else
                     {
-                        $gameToEnd = $gameCoordinator->currentGames[$gameId];
+                        $gameCoordinator->disconnectPlayer($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
+                    }
+                }
+                break;
+            }
 
-                        //Get all the necessary endgame stats to send to each player.
-                        $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
+            case "SubmitRun":
+            {
+                $gameId = $receivedJson['gameId'];
 
-                        $endTime = new DateTime();
-                        logWarn("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A"));
+                logMessage("Player is submitting run in game ".$receivedJson['gameId']);
 
-                        $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
-                        logMessage("Elapsed time of game: ".$elapsedTime);
+                if(!verifyConnection($receivedJson['ticket']))
+                {
+                    logWarn("Invalid Steam ticket or player is not in game, rejecting submission");
+                    return;
+                }
 
-                        $claims = $gameToEnd->numOfClaims;
+                if($gameCoordinator->verifyRunSubmission($receivedJson))
+                {
+                    $submitResult = $gameCoordinator->submitRun($receivedJson);
+                    if($submitResult >= 0)
+                    {
+                        //Check if the claimed level resulted in a bingo.
+                        $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
 
-                        $bingoSignal = new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap);
+                        $levelDisplayName = $gameCoordinator->currentGames[$gameId]->grid->levelTable[$receivedJson['row']."-".$receivedJson['column']]->levelName;
+
+                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
+
                         foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
-                            $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
+                            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
                             sendEncodedMessage($message,$playerObj->websocketConnection);
+                        }
+                        if($hasObtainedBingo)
+                        {
+                            $gameToEnd = $gameCoordinator->currentGames[$gameId];
+
+                            //Get all the necessary endgame stats to send to each player.
+                            $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
+
+                            $endTime = new DateTime();
+                            logWarn("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A"));
+
+                            $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
+                            logMessage("Elapsed time of game: ".$elapsedTime);
+
+                            $claims = $gameToEnd->numOfClaims;
+
+                            $bingoSignal = new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap);
+                            foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
+                            {
+                                $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
+                                sendEncodedMessage($message,$playerObj->websocketConnection);
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                logWarn("Run submission was invalid - rejecting");
-            }
-            break;
-        }
-        case "UpdateMapPool":
-        {
-            if(verifyConnection($receivedJson['ticket'],true))
-            {
-                $gameId = $receivedJson['gameId'];
-                if(array_key_exists($gameId,$gameCoordinator->currentGames))
-                {
-                    logMessage("Updating map pools for game ".$gameId);
-                    $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
-                }
                 else
                 {
-                    logError("Tried to update map pools for game ".$gameId."but it doesn't exist!");
+                    logWarn("Run submission was invalid - rejecting");
                 }
+                break;
             }
-            break;
-        }
-        case "UpdateTeamSettings":
-        {
-            if(verifyConnection($receivedJson['ticket'],true))
+            case "UpdateMapPool":
             {
-                $gameId = $receivedJson['gameId'];
-                if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                if(verifyConnection($receivedJson['ticket'],true))
                 {
-                    logMessage("Updating teams for game ".$gameId);
-                    $gameCoordinator->currentGames[$gameId]->updateTeams($receivedJson["teams"]);
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        logMessage("Updating map pools for game ".$gameId);
+                        $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
+                    }
+                    else
+                    {
+                        logError("Tried to update map pools for game ".$gameId."but it doesn't exist!");
+                    }
                 }
-                else
-                {
-                    logError("Tried to update teams for game ".$gameId."but it doesn't exist!");
-                }
+                break;
             }
-            break;
-        }
-        case "ClearTeams":
-        {
-            if(verifyConnection($receivedJson['ticket'],true))
+            case "UpdateTeamSettings":
             {
-                $gameId = $receivedJson['gameId'];
-                if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                if(verifyConnection($receivedJson['ticket'],true))
                 {
-                    logMessage("Clearing teams of game ".$gameId);
-                    $gameCoordinator->currentGames[$gameId]->clearTeams();
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        logMessage("Updating teams for game ".$gameId);
+                        $gameCoordinator->currentGames[$gameId]->updateTeams($receivedJson["teams"]);
+                    }
+                    else
+                    {
+                        logError("Tried to update teams for game ".$gameId."but it doesn't exist!");
+                    }
                 }
-                else
-                {
-                    logError("Tried to clear teams for game ".$gameId."but it doesn't exist!");
-                }
+                break;
             }
+            case "ClearTeams":
+            {
+                if(verifyConnection($receivedJson['ticket'],true))
+                {
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        logMessage("Clearing teams of game ".$gameId);
+                        $gameCoordinator->currentGames[$gameId]->clearTeams();
+                    }
+                    else
+                    {
+                        logError("Tried to clear teams for game ".$gameId."but it doesn't exist!");
+                    }
+                }
 
-            break;
+                break;
+            }
+            case "CheatActivation":
+            {
+                $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
+                break;
+            }
+            case "RegisterTicket":
+            {
+                logWarn("Registering new connection");
+                registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
+                break;
+            }
+            case "VerifyModList":
+            {
+                $verification =verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
+                $message = new ValidateModlist($verification);
+                $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
+                sendEncodedMessage($em,$connection);
+                break;
+            }
+            default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
         }
-        case "CheatActivation":
-        {
-            $gameCoordinator->humiliatePlayer($receivedJson['gameId'],$receivedJson['steamId']);
-            break;
-        }
-        case "RegisterTicket":
-        {
-            logWarn("Registering new connection");
-            registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
-            break;
-        }
-        case "VerifyModList":
-        {
-            $verification =verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
-            $message = new ValidateModlist($verification);
-            $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
-            sendEncodedMessage($em,$connection);
-            break;
-        }
-        default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
     }
+    catch(Exception $e)
+    {
+        logError("Timed out while trying to process message " . $receivedJson["messageType"]);
+    }
+    finally
+    {
+        set_time_limit(0);
+    }
+
+
 }
 ?>

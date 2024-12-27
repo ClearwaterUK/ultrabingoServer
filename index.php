@@ -66,16 +66,25 @@ try {
         ->addMiddleware(new WebSocket\Middleware\PingResponder())
         ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
         ->setTimeout($TIMEOUT)
+        ->setFrameSize(2048)
         ->onConnect(function ($server,$connection,$request) {
-            onClientConnect($server);
+            if($server <> null)
+            {
+                onClientConnect($server);
+            }
         })
         ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
-            onMessageRecieved($message->getContent(), $connection);
+            if($message <> null && $connection <> null)
+            {
+                onMessageRecieved($message->getContent(), $connection);
+            }
         })
         ->onPing(function ($client, $connection, $message) {
-            $pong = new Pong();
-            $em = new EncapsulatedMessage("Pong", json_encode($pong));
-            sendEncodedMessage($em, $connection);
+            if ($client <> null && $connection <> null && $message <> null) {
+                $pong = new Pong();
+                $em = new EncapsulatedMessage("Pong", json_encode($pong));
+                sendEncodedMessage($em, $connection);
+            }
         })
         ->onError(function ($server, $connection, $exception) {
             if ($server <> null && $connection <> null && $exception <> null) {
@@ -84,8 +93,10 @@ try {
         })
         ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
             onClientDisconnect($server, $connection);
-        })
-        ->start();
+        });
+
+    $server->setLogger(new BingoLogger());
+    $server->start();
 } catch (Throwable $e) {
     logError("Server error!");
     logError($e->getMessage()."(".$e->getFile().", ".$e->getLine().")");
