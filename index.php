@@ -67,11 +67,9 @@ try {
         ->setMaxConnections($MAX_CONCURRENT_CONNECTIONS)
         ->setTimeout($TIMEOUT)
         ->setFrameSize(2048)
-        ->onConnect(function ($server,$connection,$request) {
-            if($server <> null)
-            {
-                onClientConnect($server);
-            }
+        ->onHandshake(function($client,$connection,$request)
+        {
+            if($client <> null) {onClientConnect($client);}
         })
         ->onText(function (WebSocket\Server $server, WebSocket\Connection $connection, WebSocket\Message\Text $message) {
             if($message <> null && $connection <> null)
