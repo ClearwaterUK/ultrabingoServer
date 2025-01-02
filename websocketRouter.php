@@ -354,12 +354,12 @@ function onMessageRecieved($message,$connection):void
     catch(Exception $e)
     {
         logError("Timed out while trying to process message " . $receivedJson["messageType"]);
+        logError($e->getMessage());
     }
     finally
     {
         set_time_limit(0);
     }
-
 
 }
 ?>
