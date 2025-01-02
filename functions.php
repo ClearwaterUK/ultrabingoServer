@@ -277,4 +277,42 @@ function sanitiseUsername($inputUsername)
 
 }
 
+function addKickToDB($steamId,$roomId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("INSERT INTO kickedPlayers(K_STEAMID, K_ROOMID) VALUES (?,?)");
+
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+    $request->bindParam(2,$steamId,PDO::PARAM_INT);
+
+    $request->execute();
+}
+
+function clearKicks($roomId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("DELETE FROM kickedPlayers WHERE K_ROOMID = ?");
+    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+
+    $request->execute();
+}
+
+function checkBan($steamId,$ipAddress):bool
+{
+    global $dbc;
+    logWarn("Checking ban for steamID ".$steamId. "(".$ipAddress.")");
+
+    $request = $dbc->prepare("SELECT B_STEAMID, B_IP FROM bannedPlayers WHERE B_STEAMID = ? OR B_IP = ?");
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+    $request->bindParam(2,$ipAddress,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetchAll();
+
+    return (count($res) > 0);
+}
+
+
 ?>

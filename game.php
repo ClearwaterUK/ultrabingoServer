@@ -478,6 +478,43 @@ class GameController
         }
     }
 
+    public function kickPlayer($gameId,$playerToKick)
+    {
+        $game = $this->currentGames[$gameId];
+        $nameToKick = $game->currentPlayers[$playerToKick]->username;
+
+        $kickNotification = new KickNotification($nameToKick);
+        $kickMessage = new KickMessage();
+
+        $kick =  new EncapsulatedMessage("Kicked", json_encode($kickMessage));
+        $kickNotif =  new EncapsulatedMessage("KickNotification", json_encode($kickNotification));
+
+        if($game->gameHost == $playerToKick)
+        {
+            logError("Host is trying to kick themselves, preventing");
+            return;
+        }
+
+        foreach($game->currentPlayers as $playerSteamId => $playerObj)
+        {
+            if($playerObj->steamId == $playerToKick)
+            {
+                //Remove the player from the game.
+                sendEncodedMessage($kick,$playerObj->websocketConnection);
+            }
+            else
+            {
+                //Notify all other players of the player being kicked.
+                sendEncodedMessage($kickNotif,$playerObj->websocketConnection);
+            }
+        }
+
+        //Add the kicked player to the DB.
+        addKickToDB($playerToKick,$gameId);
+
+        unset($game->currentPlayers[$playerToKick]);
+    }
+
     public function updateGameSettings($settings):void
     {
         $wereTeamsReset = false;
@@ -669,6 +706,9 @@ class GameController
     {
         logWarn("Destroying game id ".$gameId . " from game coordinator");
         unset($this->currentGames[$gameId]);
+
+        logWarn("Clearing kicks");
+        clearKicks($gameId);
 
         logWarn("Removing entry from DB");
         removeGame($gameId);

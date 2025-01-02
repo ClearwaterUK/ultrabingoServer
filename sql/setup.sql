@@ -43,3 +43,17 @@ create table activeConnections
     C_ROOMID int,
     C_ISHOST BOOLEAN NOT NULL
 );
+
+create table kickedPlayers
+(
+    K_ID int NOT NULL AUTO_INCREMENT primary key,
+    K_STEAMID varchar(64),
+    K_ROOMID int
+);
+
+create table bannedPlayers
+(
+    B_ID int NOT NULL AUTO_INCREMENT primary key,
+    B_STEAMID varchar(64),
+    B_IP varchar(32)
+);
