@@ -284,7 +284,7 @@ function addKickToDB($steamId,$roomId)
     $request = $dbc->prepare("INSERT INTO kickedPlayers(K_STEAMID, K_ROOMID) VALUES (?,?)");
 
     $request->bindParam(1,$steamId,PDO::PARAM_STR);
-    $request->bindParam(2,$steamId,PDO::PARAM_INT);
+    $request->bindParam(2,$roomId,PDO::PARAM_INT);
 
     $request->execute();
 }
