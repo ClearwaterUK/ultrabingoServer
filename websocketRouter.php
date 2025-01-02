@@ -140,6 +140,16 @@ function onMessageRecieved($message,$connection):void
                     return;
                 }
 
+                // Make sure the steamID wasn't already kicked from the game
+                if(checkKick($receivedJson['roomId'],$receivedJson["steamId"])) {
+                    logError("This SteamID was kicked from this game!");
+                    $status = -6;
+                    $crr = new JoinRoomResponse($status, -1, null);
+                    $em = new EncapsulatedMessage("JoinRoomResponse", json_encode($crr));
+                    sendEncodedMessage($em, $connection);
+                    $connection->close();
+                }
+
                 $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
 
                 $status = (gettype($gameToJoin) == "integer") ? $gameToJoin : 0;
@@ -342,8 +352,9 @@ function onMessageRecieved($message,$connection):void
             }
             case "VerifyModList":
             {
-                $verification =verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
-                $message = new ValidateModlist($verification);
+                global $CLIENT_VERSION;
+                $verification = verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
+                $message = new ValidateModlist($verification,$CLIENT_VERSION);
                 $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
                 sendEncodedMessage($em,$connection);
                 break;

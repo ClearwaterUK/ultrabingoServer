@@ -314,5 +314,18 @@ function checkBan($steamId,$ipAddress):bool
     return (count($res) > 0);
 }
 
+function checkKick($gameId, $steamId)
+{
+    global $dbc;
+    $request = $dbc->prepare("SELECT K_ROOMID, K_STEAMID FROM kickedPlayers WHERE K_ROOMID = ? AND K_STEAMID = ?");
+    $request->bindParam(1,$gameId,PDO::PARAM_INT);
+    $request->bindParam(2,$steamId,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetchAll();
+
+    return (count($res) > 0);
+}
+
 
 ?>
