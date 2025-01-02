@@ -129,7 +129,7 @@ function onMessageRecieved($message,$connection):void
             {
                 logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']);
                 //Make sure the steamID or the IP isn't banned
-                if(checkBan($receivedJson["hostSteamId"],explode(":",$connection->getRemoteName())[0]))
+                if(checkBan($receivedJson["steamId"],explode(":",$connection->getRemoteName())[0]))
                 {
                     logError("This SteamID or IP address is banned from the mod!");
                     $status = -5;
