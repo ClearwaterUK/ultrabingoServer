@@ -3,10 +3,12 @@
 class KickNotification
 {
     public $playerToKick;
+    public $steamId;
 
-    public function __construct($playerToKick)
+    public function __construct($playerToKick,$steamId)
     {
         $this->playerToKick = $playerToKick;
+        $this->steamId = $steamId;
     }
 }
 

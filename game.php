@@ -481,9 +481,11 @@ class GameController
     public function kickPlayer($gameId,$playerToKick)
     {
         $game = $this->currentGames[$gameId];
-        $nameToKick = $game->currentPlayers[$playerToKick]->username;
 
-        $kickNotification = new KickNotification($nameToKick);
+        $nameToKick = $game->currentPlayers[$playerToKick]->username;
+        $steamId = $game->currentPlayers[$playerToKick]->steamId;
+
+        $kickNotification = new KickNotification($nameToKick,$steamId);
         $kickMessage = new KickMessage();
 
         $kick =  new EncapsulatedMessage("Kicked", json_encode($kickMessage));
