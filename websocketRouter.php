@@ -140,7 +140,10 @@ function onMessageRecieved($message,$connection):void
                     if($canJoin == 0)
                     {
                         $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection);
-                        $crr = new JoinRoomResponse($canJoin,$gameId,$game);
+
+                        var_export($gameCoordinator->currentGames[$gameId]->currentPlayers);
+
+                        $crr = new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]);
                         $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                         sendEncodedMessage($em,$connection);
                         $connection->close();

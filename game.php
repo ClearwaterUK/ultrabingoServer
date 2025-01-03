@@ -429,6 +429,10 @@ class GameController
 
     public function joinGame(int $gameId, string $playerName, string $steamId, WebSocket\Connection $playerConnection)
     {
+        //Add the new player to the player list of the Game.
+        $playerToAdd = new GamePlayer($playerName,$steamId,$playerConnection);
+        $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
+
         //Broadcast the new player joining to everyone else in the current Game.
         $message = new JoinRoomNotification($playerName,$steamId);
         $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
@@ -442,9 +446,6 @@ class GameController
             }
         }
 
-        //Add the new player to the player list of the Game.
-        $playerToAdd = new GamePlayer($playerName,$steamId,$playerConnection);
-        $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
     }
 
     public function kickPlayer($gameId,$playerToKick)
