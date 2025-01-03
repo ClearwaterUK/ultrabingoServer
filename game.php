@@ -434,7 +434,7 @@ class GameController
 
         if($gameLookup <> null)
         {
-            $gameId = intval($gameLookup['R_GAMEID']);
+            $gameId = intval($gameLookup['R_ID']);
 
             //Make sure the game isn't already full or hasn't already started.
             if($gameLookup['R_CURRENTPLAYERS'] == $gameLookup['R_MAXPLAYERS'])
