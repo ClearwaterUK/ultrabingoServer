@@ -94,8 +94,44 @@ function lookForGame($roomPassword)
     }
     else
     {
-        return null;
+        return 0;
     }
+}
+
+function checkJoinEligibility($game,$steamId,$ip)
+{
+    global $dbc;
+
+    // Make sure the steamID wasn't already kicked from the game
+    if(checkKick($game['R_ID'],$steamId)) {
+        logError("This SteamID was kicked from this game!");
+        return -6;
+    }
+
+    if(checkBan($steamId,$ip))
+    {
+        logError("This SteamID or IP address is banned from the mod!");
+        return -5;
+    }
+
+    if($game['R_CURRENTPLAYERS'] == $game['R_MAXPLAYERS'])
+    {
+        logWarn("Game is already full");
+        return -4;
+    }
+
+    if($game['R_TEAMCOMPOSITION'] == 1 && $game['R_JOINABLE'] == 0)
+    {
+        logWarn("Game not accepting new players");
+        return -3;
+    }
+    if($game['R_HASSTARTED'] == 1)
+    {
+        logWarn("Game has already started");
+        return -2;
+    }
+
+    return 0;
 }
 
 function removeGame($roomId)

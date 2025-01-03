@@ -427,57 +427,24 @@ class GameController
         return $gameToCreate;
     }
 
-    public function joinGame(string $gamePassword, string $playerName, string $plrSteamId, WebSocket\Connection $playerConnection)
+    public function joinGame(int $gameId, string $playerName, string $steamId, WebSocket\Connection $playerConnection)
     {
-        // Lookup the game id in the DB and see if it exists.
-        $gameLookup = lookForGame($gamePassword);
+        //Broadcast the new player joining to everyone else in the current Game.
+        $message = new JoinRoomNotification($playerName,$steamId);
+        $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
 
-        if($gameLookup <> null)
+        //Send the message to the client first, then send it to everyone else.
+        foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
         {
-            $gameId = intval($gameLookup['R_ID']);
-
-            //Make sure the game isn't already full or hasn't already started.
-            if($gameLookup['R_CURRENTPLAYERS'] == $gameLookup['R_MAXPLAYERS'])
+            if($steamId <> $playerSteamId)
             {
-                logWarn("Game is already full");
-                return -4;
+                sendEncodedMessage($em,$playerObj->websocketConnection);
             }
-            //If the game has manually set teams, make sure the host is still allowing players (teams have not been locked in):
-            if($gameLookup['R_TEAMCOMPOSITION'] == 1 && $gameLookup['R_JOINABLE'] == 0)
-            {
-                logWarn("Game not accepting new players");
-                return -3;
-            }
-            if($gameLookup['R_HASSTARTED'] == 1)
-            {
-                logWarn("Game has already started");
-                return -2;
-            }
-
-            //Broadcast the new player joining to everyone else in the current Game.
-            $message = new JoinRoomNotification($playerName,$plrSteamId);
-            $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
-
-            //Send the message to the client first, then send it to everyone else.
-            //May have to move this til after the player has joined, otherwise the joining player gets the notif firsts and then panics
-            //Because game data wasn't sent to them first.
-            foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
-            {
-                if($plrSteamId <> $playerSteamId)
-                {
-                    sendEncodedMessage($em,$playerObj->websocketConnection);
-                }
-            }
-
-            //Add the new player to the player list of the Game.
-            $playerToAdd = new GamePlayer($playerName,$plrSteamId,$playerConnection);
-            $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$plrSteamId);
-            return array($gameId,$this->currentGames[$gameId]);
         }
-        else
-        {
-            return -1;
-        }
+
+        //Add the new player to the player list of the Game.
+        $playerToAdd = new GamePlayer($playerName,$steamId,$playerConnection);
+        $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
     }
 
     public function kickPlayer($gameId,$playerToKick)

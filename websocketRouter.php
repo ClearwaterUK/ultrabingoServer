@@ -130,51 +130,39 @@ function onMessageRecieved($message,$connection):void
             case "JoinRoom":
             {
                 logMessage($receivedJson['username']." wants to join game with password".$receivedJson['password']);
-                $gameData = $gameCoordinator->joinGame($receivedJson['password'],$receivedJson['username'],$receivedJson['steamId'],$connection);
 
-                if($gameData == -1)
+                //Start by checking if game exists.
+                $game = lookForGame($receivedJson['password']);
+                if($game <> 0)
                 {
-                    logError("Game does not exist");
-                    $status = -1;
-                    $crr = new JoinRoomResponse($status,-1,null);
+                    $gameId = intval($game['R_ID']);
+                    $canJoin = checkJoinEligibility($game,$receivedJson['steamId'],explode(":",$connection->getRemoteName())[0]);
+                    if($canJoin == 0)
+                    {
+                        $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection);
+                        $crr = new JoinRoomResponse($canJoin,$gameId,$game);
+                        $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
+                        sendEncodedMessage($em,$connection);
+                        $connection->close();
+                        break;
+                    }
+                    else
+                    {
+                        $crr = new JoinRoomResponse($canJoin,-1,null);
+                        $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
+                        sendEncodedMessage($em,$connection);
+                        $connection->close();
+                        break;
+                    }
+                }
+                else
+                {
+                    $crr = new JoinRoomResponse(-1,-1,null);
                     $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                     sendEncodedMessage($em,$connection);
                     $connection->close();
-                    return;
+                    break;
                 }
-
-                $roomId = $gameData[0];
-                $room = $gameData[1];
-
-                //Make sure the steamID or the IP isn't banned
-                if(checkBan($receivedJson["steamId"],explode(":",$connection->getRemoteName())[0]))
-                {
-                    logError("This SteamID or IP address is banned from the mod!");
-                    $status = -5;
-                    $crr = new JoinRoomResponse($status,-1,null);
-                    $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
-                    sendEncodedMessage($em,$connection);
-                    $connection->close();
-                    return;
-                }
-
-                // Make sure the steamID wasn't already kicked from the game
-                if(checkKick($roomId,$receivedJson["steamId"])) {
-                    logError("This SteamID was kicked from this game!");
-                    $status = -6;
-                    $crr = new JoinRoomResponse($status, -1, null);
-                    $em = new EncapsulatedMessage("JoinRoomResponse", json_encode($crr));
-                    sendEncodedMessage($em, $connection);
-                    $connection->close();
-                    return;
-                }
-
-                $status = 0;
-                $jrr = new JoinRoomResponse($status,$roomId,$room);
-                $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
-                sendEncodedMessage($em,$connection);
-
-                break;
             }
 
             case "UpdateRoomSettings":
