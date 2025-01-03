@@ -427,13 +427,15 @@ class GameController
         return $gameToCreate;
     }
 
-    public function joinGame(Int $gameId, string $playerName, string $plrSteamId, WebSocket\Connection $playerConnection)
+    public function joinGame(string $gamePassword, string $playerName, string $plrSteamId, WebSocket\Connection $playerConnection)
     {
         // Lookup the game id in the DB and see if it exists.
-        $gameLookup = lookForGame($gameId);
+        $gameLookup = lookForGame($gamePassword);
 
-        if(lookForGame($gameId) <> null)
+        if($gameLookup <> null)
         {
+            $gameId = intval($gameLookup['R_GAMEID']);
+
             //Make sure the game isn't already full or hasn't already started.
             if($gameLookup['R_CURRENTPLAYERS'] == $gameLookup['R_MAXPLAYERS'])
             {
@@ -470,7 +472,7 @@ class GameController
             //Add the new player to the player list of the Game.
             $playerToAdd = new GamePlayer($playerName,$plrSteamId,$playerConnection);
             $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$plrSteamId);
-            return $this->currentGames[$gameId];
+            return array($gameId,$this->currentGames[$gameId]);
         }
         else
         {

@@ -33,15 +33,20 @@ class RoomDataDB
 function createRoomInDatabase($roomData)
 {
     global $dbc;
+
+    $roomPassword = bin2hex(random_bytes(3));
+    logWarn($roomPassword);
+
     try {
-        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,1,0,8,4,0,0,0,0,2,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,?,1,0,8,4,0,0,0,0,2,0,0)');
         $request->bindParam(1,$roomData['hostSteamId'],PDO::PARAM_STR);
+        $request->bindParam(2,$roomPassword,PDO::PARAM_STR);
         $request->execute();
 
-        $request2 = $dbc->prepare("SELECT R_ID FROM currentGames ORDER BY R_ID DESC LIMIT 1");
+        $request2 = $dbc->prepare("SELECT R_ID,R_PASSWORD FROM currentGames ORDER BY R_ID DESC LIMIT 1");
         $request2->execute();
 
-        return intval($request2->fetch()["R_ID"]);
+        return $request2->fetch();
     }
     catch(Exception $e)
     {
@@ -73,12 +78,12 @@ function verifyModList($modList,$steamId)
     return true;
 }
 
-function lookForGame($roomId)
+function lookForGame($roomPassword)
 {
     global $dbc;
 
-    $request = $dbc->prepare("SELECT R_ID,R_CURRENTPLAYERS,R_MAXPLAYERS,R_TEAMCOMPOSITION,R_JOINABLE,R_HASSTARTED FROM currentGames WHERE R_ID = ?");
-    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+    $request = $dbc->prepare("SELECT R_ID,R_CURRENTPLAYERS,R_MAXPLAYERS,R_TEAMCOMPOSITION,R_JOINABLE,R_HASSTARTED FROM currentGames WHERE R_PASSWORD = ?");
+    $request->bindParam(1,$roomPassword,PDO::PARAM_STR);
     $request->execute();
 
     $res = $request->fetchAll();
@@ -108,8 +113,27 @@ function startGameInDB(int $roomId)
     SET R_HASSTARTED = 1
     WHERE R_ID = ?");
 
-    $request->bindParam(1,$roomId,PDO::PARAM_INT);
+    $request->bindParam(1, $roomId, PDO::PARAM_INT);
     $request->execute();
+
+}
+
+function getGameFromPassword($roomPassword)
+{
+    global $dbc;
+    $request = $dbc->prepare("SELECT R_ID FROM currentGames where R_PASSWORD = ?");
+    $request->bindParam(1,$roomPassword,PDO::PARAM_STR);
+    $request->execute();
+
+    $res = $request->fetch();
+    if ($res && count($res) > 0)
+    {
+        return intval($res[0]);
+    }
+    else
+    {
+        return -1;
+    }
 }
 
 function updateGameSettings(Int $roomId,GameSettings $newSettings)

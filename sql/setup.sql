@@ -16,6 +16,7 @@ use ultrabingo;
 create table currentGames
 (
     R_ID int NOT NULL AUTO_INCREMENT primary key,
+    R_PASSWORD varchar(6),
 
     R_HOSTEDBY varchar(64),
     R_CURRENTPLAYERS int NOT NULL,

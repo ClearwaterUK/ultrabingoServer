@@ -103,14 +103,16 @@ function onMessageRecieved($message,$connection):void
                 }
 
                 logWarn("Creating new game in DB");
-                $roomId = createRoomInDatabase($receivedJson);
+                $roomData = createRoomInDatabase($receivedJson);
+                $roomId = intval($roomData[0]);
+                $roomPassword = $roomData[1];
                 if($roomId <> null && $roomId <> 0)
                 {
                     //Create the room
                     $status = "ok";
                     $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
-                    logMessage("Game created and set up with id ".$roomId);
-                    $crr = new CreateRoomResponse($status,$roomId,$game);
+                    logMessage("Game created and set up with id ".$roomId." , password " . $roomPassword);
+                    $crr = new CreateRoomResponse($status,$roomId,$roomPassword,$game);
                     $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
                 }
                 else{
@@ -127,7 +129,23 @@ function onMessageRecieved($message,$connection):void
 
             case "JoinRoom":
             {
-                logMessage($receivedJson['username']." wants to join game ".$receivedJson['roomId']);
+                logMessage($receivedJson['username']." wants to join game with password".$receivedJson['password']);
+                $gameData = $gameCoordinator->joinGame($receivedJson['password'],$receivedJson['username'],$receivedJson['steamId'],$connection);
+
+                if($gameData == -1)
+                {
+                    logError("Game does not exist");
+                    $status = -1;
+                    $crr = new JoinRoomResponse($status,-1,null);
+                    $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
+                    sendEncodedMessage($em,$connection);
+                    $connection->close();
+                    return;
+                }
+
+                $roomId = $gameData[0];
+                $room = $gameData[1];
+
                 //Make sure the steamID or the IP isn't banned
                 if(checkBan($receivedJson["steamId"],explode(":",$connection->getRemoteName())[0]))
                 {
@@ -141,21 +159,17 @@ function onMessageRecieved($message,$connection):void
                 }
 
                 // Make sure the steamID wasn't already kicked from the game
-                if(checkKick($receivedJson['roomId'],$receivedJson["steamId"])) {
+                if(checkKick($roomId,$receivedJson["steamId"])) {
                     logError("This SteamID was kicked from this game!");
                     $status = -6;
                     $crr = new JoinRoomResponse($status, -1, null);
                     $em = new EncapsulatedMessage("JoinRoomResponse", json_encode($crr));
                     sendEncodedMessage($em, $connection);
                     $connection->close();
+                    return;
                 }
 
-                $gameToJoin = $gameCoordinator->joinGame($receivedJson['roomId'],$receivedJson['username'],$receivedJson['steamId'],$connection);
-
-                $status = (gettype($gameToJoin) == "integer") ? $gameToJoin : 0;
-                $roomId = $receivedJson['roomId'];
-                $room = ($status == 0) ? $gameCoordinator->currentGames[$receivedJson['roomId']] : null;
-
+                $status = 0;
                 $jrr = new JoinRoomResponse($status,$roomId,$room);
                 $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($jrr));
                 sendEncodedMessage($em,$connection);
