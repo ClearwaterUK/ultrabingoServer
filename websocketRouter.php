@@ -140,14 +140,9 @@ function onMessageRecieved($message,$connection):void
                     if($canJoin == 0)
                     {
                         $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection);
-
-                        var_export($gameCoordinator->currentGames[$gameId]->currentPlayers);
-
                         $crr = new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]);
                         $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                         sendEncodedMessage($em,$connection);
-                        $connection->close();
-                        break;
                     }
                     else
                     {
@@ -155,7 +150,6 @@ function onMessageRecieved($message,$connection):void
                         $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                         sendEncodedMessage($em,$connection);
                         $connection->close();
-                        break;
                     }
                 }
                 else
@@ -164,8 +158,8 @@ function onMessageRecieved($message,$connection):void
                     $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                     sendEncodedMessage($em,$connection);
                     $connection->close();
-                    break;
                 }
+                break;
             }
 
             case "UpdateRoomSettings":
