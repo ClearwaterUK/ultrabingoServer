@@ -4,3 +4,4 @@ composer.lock
 .env
 err.log
 out.log
+readme.md

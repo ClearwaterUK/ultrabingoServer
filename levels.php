@@ -62,7 +62,7 @@ $mapPools['campaign'] = array(
 
     new LevelInformation("GARDEN OF FORKING PARKS","Level 7-1"),
     new LevelInformation("LIGHT UP THE NIGHT","Level 7-2"),
-    new LevelInformation("SUFFERING LEAVES SUFFERING LEAVES","Level 7-3"),
+    new LevelInformation("NO SOUND, NO MEMORY","Level 7-3"),
     new LevelInformation("...LIKE ANTENNAS TO HEAVEN","Level 7-4"),
 
 );
@@ -182,7 +182,22 @@ $mapPools['purgatorio'] = array(
         "515486d54abac2a4694e34cb1b31d18f","RaifuEveryStarInTheSkyReal"),
     new LevelInformation("INDULGENCE - THE DEATH OF PARADIGM","mag.indulgence.thedeathofparadigm",true,
         "31cdd0834c3ac504c8313dcb76ec6545","mag.indulgence.thedeathofparadigm")
-)
+);
+
+//Shitfest
+$mapPools['shitfest'] = array(
+    new LevelInformation("FALSE ASCENDENCE 2","phantom.falsefdsafgsgsrga.adgsdf",true,
+        "495300b85838d9246aad4d9f6c6393bc","phantom.falsefdsafgsgsrga.adgsdf"),
+    new LevelInformation("NOVA KAIZO - TALLADEGA","RedNova_NovaKaizo1",true,
+        "f38753c95f382ad40b672e07f73ed298","RedNova_NovaKaizo1"),
+    //Intentional space in this id. Also what the fuck is this id name lmao
+    new LevelInformation("SPECIAL CHRISTMAS GIFT","DavieJay2011.ChristmasGifttotheChristmasUltra-killCommunity.....SohappeytofinallybebackhomeForchristmasGiftswinter ",true,
+        "868d6d05d8121b04981b9941ae32229f","DavieJay2011.ChristmasGifttotheChristmasUltra-killCommunity.....SohappeytofinallybebackhomeForchristmasGiftswinter "),
+    new LevelInformation("ROTAT E - DIZZY DILEMMA","fruitc.rotate1",true,
+        "9837fa93d8761d84385f003ce997fe46","fruitc.rotate1"),
+    new LevelInformation("ROTAT E - SPINNING STUPIDITY","fruitc.rotate2",true,
+        "9837fa93d8761d84385f003ce997fe46","fruitc.rotate2"),
+);
 
 
 ?>
