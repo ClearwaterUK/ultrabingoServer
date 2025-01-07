@@ -96,7 +96,7 @@ try {
             onClientDisconnect($server, $connection);
         });
 
-    $server->setLogger(new BingoLogger());
+    //$server->setLogger(new BingoLogger());
     $server->start();
 } catch (Throwable $e) {
     logError("Server error!");

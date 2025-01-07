@@ -38,7 +38,7 @@ function createRoomInDatabase($roomData)
     logWarn($roomPassword);
 
     try {
-        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,?,1,0,8,4,0,0,0,0,2,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,?,1,0,8,4,0,1,0,0,2,0,0)');
         $request->bindParam(1,$roomData['hostSteamId'],PDO::PARAM_STR);
         $request->bindParam(2,$roomPassword,PDO::PARAM_STR);
         $request->execute();
@@ -120,7 +120,7 @@ function checkJoinEligibility($game,$steamId,$ip)
         return -4;
     }
 
-    if($game['R_TEAMCOMPOSITION'] == 1 && $game['R_JOINABLE'] == 0)
+    if($game['R_JOINABLE'] == 0)
     {
         logWarn("Game not accepting new players");
         return -3;
