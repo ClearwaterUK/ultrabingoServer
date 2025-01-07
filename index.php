@@ -47,6 +47,7 @@ require_once (__DIR__.'/logging.php');
 
 logInfo("Loading environment variables");
 loadEnvFile();
+$PORT = $_ENV['SERVER_PORT'];
 
 logInfo("Loading level list");
 require_once (__DIR__.'/levels.php');
