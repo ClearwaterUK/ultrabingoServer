@@ -131,7 +131,9 @@ $mapPools['angryStandard'] = array(
     new LevelInformation("IMMINENT COLLAPSE OF THE PAST","GGGamesXDlol.RudeJam2",true,
         "12db525d3ca45174fbb58fa9d620b112","GGGamesXDlol.RudeJam2"),
     new LevelInformation("RE-WRATH - A MAN MADE SEA","funny.rewrath.level2",true,
-        "d916f350fc8b1b64e91567180610db04","funny.rewrath.level2")
+        "d916f350fc8b1b64e91567180610db04","funny.rewrath.level2"),
+    new LevelInformation("ABANDONED IN PLACE","willem1321-abandonedinplace",true,
+        "c5f273cc16751b64ea9c0a9b47b7ff82","willem1321-abandonedinplace")
 );
 
 // Angry Hardcore
@@ -152,7 +154,6 @@ $mapPools['angryHardcore'] = array(
         "033ce9db13ba74d4aa07bdae343d49c2","Spelunky.FRAUDULENCE_SECOND"),
     new LevelInformation("MINI HELL","megacheb.minihell",true,
         "c10731c87bbd7924c8a8244b5cc402f5","megacheb.minihell"),
-
     new LevelInformation("AND THE CROWD GOES WILD","Rude.Jam.cool.level",true,
         "e11a91fdcdd962245910c68dc25debea","Rude.Jam.cool.level"),
     new LevelInformation("THE TIMESPLICER","RedNova.Willem.Collab",true,
@@ -162,7 +163,15 @@ $mapPools['angryHardcore'] = array(
     new LevelInformation("BLOODY TEARS","riko.uk.bloodytears",true,
         "6d50b188a4aa7164f8c49df7607eb274","riko.uk.bloodytears"),
     new LevelInformation("CASTLE ON THE HILL","holaSmallkloon.movingcastle.castleonthehill",true,
-        "5f7897e6b97ec5449b4f0e4dc35f9e9f","holaSmallkloon.movingcastle.castleonthehill")
+        "5f7897e6b97ec5449b4f0e4dc35f9e9f","holaSmallkloon.movingcastle.castleonthehill"),
+    new LevelInformation("MINESHAFTS - INTO THE ABYSS","aggravateexe-IntoTheAbyss",true,
+        "5615e26489d1cd746bb8f6103db7c7c2","aggravateexe-IntoTheAbyss"),
+    new LevelInformation("MINESHAFTS - RESONATING RESENTMENT","aggravateexe-ResonatingResentment",true,
+          "5615e26489d1cd746bb8f6103db7c7c2","aggravateexe-IntoTheAbyss"),
+    new LevelInformation("FRAUD - HIGHER THAN THE BLACK SKY","82.Fraud.HigherTTBS",true,
+        "9f26a2c3efa7ced4c94c5b5ded8fcd04","82.Fraud.HigherTTBS"),
+    new LevelInformation("WHERE THE STREETS HAVE NO NAME","pkpseudo-nonamestreets",true,
+        "92728cc4176b1b842a754d08bbc5b23c","pkpseudo-nonamestreets"),
 
 );
 
