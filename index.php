@@ -12,7 +12,7 @@ $PORT = 2052;
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
 
-$CLIENT_VERSION = '1.0.0';
+$CLIENT_VERSION = '1.0.1';
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
