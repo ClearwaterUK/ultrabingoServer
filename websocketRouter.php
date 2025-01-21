@@ -1,5 +1,6 @@
 <?php
 
+
 function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception):void
 {
     global $gameCoordinator;
@@ -23,10 +24,39 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         //the game from the current game list.
         if($associatedGame->gameHost == $steamId)
         {
-            logWarn("Client who dropped was the host of game ".$gameDetails[0]. ", ending game for all connected players");
-            $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
-            $gameCoordinator->destroyGame($gameDetails[0]);
-            removeGame($gameDetails[0]);
+            logWarn("Client who dropped was the host of game ".$gameDetails[0]);
+            if(checkPlayerCountOfGame($gameDetails[0]) > 0)
+            {
+                logWarn("Picking a random other player as host");
+                $list = array_filter(array_keys($associatedGame->currentPlayers),function($elem) use($steamId){
+                    return $elem == $steamId;
+                });
+                $newHost = $list[array_rand($list)];
+
+                $associatedGame->gameHost = $newHost;
+                updateHostForGame($gameDetails[0],$newHost);
+
+                logWarn($associatedGame->currentPlayers[$newHost]->username." is now the new host for game ".$gameDetails[0]);
+                logWarn("Notifying all players in game");
+
+                $message = new NewHostNotification($associatedGame->currentPlayers[$newHost]->username,$newHost);
+                $em = new EncapsulatedMessage("NewHostNotification",json_encode($message));
+
+                foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
+                {
+                    if($playerSteamId != $steamId)
+                    {
+                        sendEncodedMessage($em,$playerObj->websocketConnection);
+                    }
+                }
+            }
+            else
+            {
+                logWarn("No other players in game - destroying game!");
+                $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
+                $gameCoordinator->destroyGame($gameDetails[0]);
+                removeGame($gameDetails[0]);
+            }
         }
         else
         {
@@ -44,9 +74,9 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                     sendEncodedMessage($em,$playerObj->websocketConnection);
                 }
             }
-            unset($associatedGame->currentPlayers[$indexToUnset]);
+            //unset($associatedGame->currentPlayers[$indexToUnset]);
         }
-        unregisterConnection($steamId);
+        //unregisterConnection($steamId);
     }
     $connection->disconnect();
 }
@@ -227,6 +257,43 @@ function onMessageRecieved($message,$connection):void
                 break;
             }
 
+            case "ReconnectRequest":
+            {
+                logMessage("Player requesting reconnection");
+
+                if (!verifyConnection($receivedJson['ticket'])) {
+                    logWarn("Invalid Steam ticket or player is not in game, rejecting reconnection");
+                    return;
+                }
+
+                $game = $gameCoordinator->currentGames[$receivedJson['roomId']];
+                if ($game <> null)
+                {
+                    foreach ($game->currentPlayers as $playerSteamId => $playerObj)
+                    {
+                        if ($playerObj->steamId === $receivedJson['steamId']) {
+                            //Update connection here.
+                            $playerObj->websocketConnection = $connection;
+                            updateConnection($connection,$playerObj->steamId);
+
+                            logMessage("Sending fresh game data to reconnected player");
+                            $message = new ReconnectResponse("OK",$game);
+                            $em = new EncapsulatedMessage("ReconnectResponse", json_encode($message));
+                            sendEncodedMessage($em, $connection);
+                        }
+                    }
+                }
+                else
+                {
+                    logError("Game no longer exists in coordinator, sending error response");
+                    $message = new ReconnectResponse("END",$game);
+                    $em = new EncapsulatedMessage("ReconnectResponse", json_encode($message));
+                    sendEncodedMessage($em, $connection);
+                }
+            }
+
+                break;
+
             case "SubmitRun":
             {
                 $gameId = $receivedJson['gameId'];
@@ -251,11 +318,13 @@ function onMessageRecieved($message,$connection):void
 
                         $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
 
+                        logMessage("Notifying all players in game");
                         foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
                         {
                             $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
                             sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
+                        logMessage("Done");
                         if($hasObtainedBingo)
                         {
                             $gameToEnd = $gameCoordinator->currentGames[$gameId];
@@ -268,6 +337,9 @@ function onMessageRecieved($message,$connection):void
 
                             $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
                             logMessage("Elapsed time of game: ".$elapsedTime);
+
+                            logWarn("Marking game as ended in DB");
+                            markGameEnd($gameId);
 
                             $claims = $gameToEnd->numOfClaims;
 
