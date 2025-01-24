@@ -39,7 +39,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                 logWarn($associatedGame->currentPlayers[$newHost]->username." is now the new host for game ".$gameDetails[0]);
                 logWarn("Notifying all players in game");
 
-                $message = new NewHostNotification($associatedGame->currentPlayers[$newHost]->username,$newHost);
+                $message = new NewHostNotification($username,$associatedGame->currentPlayers[$newHost]->username,$newHost);
                 $em = new EncapsulatedMessage("NewHostNotification",json_encode($message));
 
                 foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
