@@ -435,8 +435,9 @@ function onMessageRecieved($message,$connection):void
     }
     catch(Exception $e)
     {
-        logError("Timed out while trying to process message " . $receivedJson["messageType"]);
+        logError("Error while trying to process message " . $receivedJson["messageType"]);
         logError($e->getMessage());
+        logError($e->getTrace());
     }
     finally
     {

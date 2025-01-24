@@ -33,8 +33,17 @@ function decodeMessage($message)
 
 function sendEncodedMessage($messageToSend,$connection):void
 {
-    $encodedMessage = base64_encode(json_encode($messageToSend));
-    $connection->text($encodedMessage);
+    try {
+        $encodedMessage = base64_encode(json_encode($messageToSend));
+        $connection->text($encodedMessage);
+    }
+    catch(Exception $e)
+    {
+        logError("Failed to send message to connection!");
+        logError($e->getMessage());
+        logError($e->getTrace());
+    }
+
 }
 
 function loadEnvFile():void
