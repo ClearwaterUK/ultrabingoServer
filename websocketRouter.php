@@ -29,9 +29,8 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             {
                 logWarn("Picking a random other player as host");
                 $list = array_filter(array_keys($associatedGame->currentPlayers),function($elem) use($steamId){
-                    return $elem == $steamId;
+                    return $elem != $steamId;
                 });
-                var_export($list);
                 $newHost = $list[array_rand($list)];
 
                 $associatedGame->gameHost = $newHost;
