@@ -430,6 +430,27 @@ function onMessageRecieved($message,$connection):void
                 sendEncodedMessage($em,$connection);
                 break;
             }
+            case "FetchGames":
+            {
+                logWarn("Fetching games");
+                $games = getPublicBingoGames();
+                $status = "";
+                if(count($games) > 0)
+                {
+                    $status = "ok";
+                }
+                else
+                {
+                    $status = "none";
+                }
+
+                $message = new FetchGamesResponse($status,json_encode($games));
+                $em = new EncapsulatedMessage("FetchGamesResponse",json_encode($message));
+
+                sendEncodedMessage($em,$connection);
+
+                break;
+            }
             default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
         }
     }

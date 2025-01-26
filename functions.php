@@ -439,5 +439,17 @@ function markGameEnd($gameId)
     $request->execute();
 }
 
+function getPublicBingoGames()
+{
+    global $dbc;
+
+    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID");
+    $request->execute();
+
+    $res = $request->fetchAll();
+
+    return $res;
+}
+
 
 ?>
