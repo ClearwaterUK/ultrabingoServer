@@ -198,7 +198,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_GAMETYPE = ?,
     R_DIFFICULTY = ?,
     R_PRANKREQUIRED = ?,
-    R_DISABLECAMPAIGNALTEXIT = ?
+    R_DISABLECAMPAIGNALTEXIT = ?,
+    R_ISPUBLIC = ?
     WHERE R_ID = ?");
 
     $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
@@ -209,7 +210,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
     $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
     $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
-    $request->bindParam(9,$roomId,PDO::PARAM_INT);
+    $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
+    $request->bindParam(10,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 
@@ -443,7 +445,9 @@ function getPublicBingoGames()
 {
     global $dbc;
 
-    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID WHERE currentGames.R_HASSTARTED = 0 AND activeConnections.C_USERNAME IS NOT NULL");
+    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames 
+    LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID 
+    WHERE currentGames.R_HASSTARTED = 0 AND currentgames.R_ISPUBLIC = 1 AND activeConnections.C_USERNAME IS NOT NULL AND activeconnections.C_ROOMID = currentgames.R_ID");
     $request->execute();
 
     $res = $request->fetchAll();

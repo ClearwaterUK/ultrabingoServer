@@ -137,6 +137,7 @@ class GameSettings
     public int $gridSize;
     public bool $requiresPRank;
     public bool $disableCampaignAltExits;
+    public int $gameVisibility;
 
     public $selectedMapPools;
 
@@ -503,6 +504,7 @@ class GameController
             $newSettings->gridSize = $settings['gridSize'];
             $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->disableCampaignAltExits = $settings['disableCampaignAltExits'];
+            $newSettings->gameVisibility = $settings['gameVisibility'];
             $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
             $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
             $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;
@@ -517,7 +519,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$wereTeamsReset);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$wereTeamsReset);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             updateGameSettings($settings['roomId'],$newSettings);
