@@ -447,7 +447,7 @@ function getPublicBingoGames()
 
     $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames 
     LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID 
-    WHERE currentGames.R_HASSTARTED = 0 AND currentgames.R_ISPUBLIC = 1 AND activeConnections.C_USERNAME IS NOT NULL AND activeconnections.C_ROOMID = currentgames.R_ID");
+    WHERE currentGames.R_HASSTARTED = 0 AND currentGames.R_ISPUBLIC = 1 AND activeConnections.C_USERNAME IS NOT NULL AND activeConnections.C_ROOMID = currentGames.R_ID");
     $request->execute();
 
     $res = $request->fetchAll();
