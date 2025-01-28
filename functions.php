@@ -443,7 +443,7 @@ function getPublicBingoGames()
 {
     global $dbc;
 
-    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID");
+    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID WHERE currentGames.R_HASSTARTED = 0 AND activeConnections.C_USERNAME IS NOT NULL");
     $request->execute();
 
     $res = $request->fetchAll();
