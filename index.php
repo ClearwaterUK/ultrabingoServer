@@ -63,7 +63,11 @@ require_once (__DIR__.'/levels.php');
 
 logInfo("Initialising DB configuration");
 require_once (__DIR__.'/DB.php');
-clearTables();
+if(!isset($_ENV['PERSIST_TABLES']) || $_ENV['PERSIST_TABLES'] == 0)
+{
+    clearTables();
+}
+
 
 logInfo("Starting up game coordinator");
 require_once(__DIR__.'/game.php');
