@@ -102,7 +102,7 @@ $mapPools['angryStandard'] = array(
         "dc7d05beb4afba646b07078325fd9385"),
     new LevelInformation("MINECRAFT - MINE ODDITY","ceo_of_gaming.overworld.1",true,
         "0678443fd37076d418830d6af625e54b"),
-    new LevelInformation("MINECRAFT - TAKE BACK THE NIGHT","ceo_of_gami ng.overworld.2",true,
+    new LevelInformation("MINECRAFT - TAKE BACK THE NIGHT","ceo_of_gaming.overworld.2",true,
         "0678443fd37076d418830d6af625e54b"),
     new LevelInformation("MINECRAFT - NETHER REACHES","ceo_of_gaming.minecraft.nether",true,
         "0678443fd37076d418830d6af625e54b"),
