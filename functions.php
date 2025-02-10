@@ -58,7 +58,7 @@ function createRoomInDatabase($roomData)
 function verifyModList($modList,$steamId)
 {
     $whitelistedMods =
-        ["AngryLevelLoader","Baphomet's BINGO","Configgy","Damage Style HUD", "EasyPZ","IntroSkip","PluginConfigurator","UnityExplorer"];
+        ["AngryLevelLoader","Baphomet's BINGO","Configgy","Damage Style HUD", "EasyPZ","IntroSkip","PluginConfigurator","StyleEditor","UnityExplorer", "USTManager"];
 
     logMessage($steamId);
     foreach($modList as $mod)
