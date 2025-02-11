@@ -12,7 +12,7 @@ $PORT = 2052;
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
 
-$CLIENT_VERSION = '1.0.1';
+$CLIENT_VERSION = '1.0.2';
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
@@ -33,8 +33,17 @@ function decodeMessage($message)
 
 function sendEncodedMessage($messageToSend,$connection):void
 {
-    $encodedMessage = base64_encode(json_encode($messageToSend));
-    $connection->text($encodedMessage);
+    try {
+        $encodedMessage = base64_encode(json_encode($messageToSend));
+        $connection->text($encodedMessage);
+    }
+    catch(Exception $e)
+    {
+        logError("Failed to send message to connection!");
+        logError($e->getMessage());
+        logError($e->getTrace());
+    }
+
 }
 
 function loadEnvFile():void
@@ -54,7 +63,11 @@ require_once (__DIR__.'/levels.php');
 
 logInfo("Initialising DB configuration");
 require_once (__DIR__.'/DB.php');
-clearTables();
+if(!isset($_ENV['PERSIST_TABLES']) || $_ENV['PERSIST_TABLES'] == 0)
+{
+    clearTables();
+}
+
 
 logInfo("Starting up game coordinator");
 require_once(__DIR__.'/game.php');

@@ -133,7 +133,9 @@ $mapPools['angryStandard'] = array(
     new LevelInformation("RE-WRATH - A MAN MADE SEA","funny.rewrath.level2",true,
         "d916f350fc8b1b64e91567180610db04"),
     new LevelInformation("ABANDONED IN PLACE","willem1321-abandonedinplace",true,
-        "c5f273cc16751b64ea9c0a9b47b7ff82")
+        "c5f273cc16751b64ea9c0a9b47b7ff82"),
+    new LevelInformation("DEATH AROUND THE CORNER","lucy.space.deathAroundTheCorner",true,
+        "87474b9c91deb124d86d323ab9db59c6")
 );
 
 // Angry Hardcore

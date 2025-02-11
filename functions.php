@@ -38,7 +38,7 @@ function createRoomInDatabase($roomData)
     logWarn($roomPassword);
 
     try {
-        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT) VALUES (?,?,1,0,8,4,0,1,0,0,2,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT,R_HASENDED) VALUES (?,?,1,0,8,4,0,1,0,0,2,0,0,0)');
         $request->bindParam(1,$roomData['hostSteamId'],PDO::PARAM_STR);
         $request->bindParam(2,$roomPassword,PDO::PARAM_STR);
         $request->execute();
@@ -58,7 +58,7 @@ function createRoomInDatabase($roomData)
 function verifyModList($modList,$steamId)
 {
     $whitelistedMods =
-        ["AngryLevelLoader","Baphomet's BINGO","Configgy","Damage Style HUD", "EasyPZ","IntroSkip","PluginConfigurator","UnityExplorer"];
+        ["AngryLevelLoader","Baphomet's BINGO","Configgy","Damage Style HUD", "EasyPZ","IntroSkip","PluginConfigurator","StyleEditor","UnityExplorer", "USTManager"];
 
     logMessage($steamId);
     foreach($modList as $mod)
@@ -142,6 +142,21 @@ function removeGame($roomId)
     $request->execute();
 }
 
+function updateHostForGame($gameId,$newHostSteamID)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("UPDATE currentGames set R_HOSTEDBY = ? WHERE R_ID = ?");
+    $request->bindParam(1,$newHostSteamID,PDO::PARAM_STR);
+    $request->bindParam(2,$gameId,PDO::PARAM_INT);
+    $request->execute();
+
+    $request2 = $dbc->prepare("UPDATE activeconnections set C_ISHOST = CASE WHEN C_STEAMID = ? THEN 1 ELSE 0 END WHERE C_ROOMID = ?");
+    $request2->bindParam(1,$newHostSteamID,PDO::PARAM_STR);
+    $request2->bindParam(2,$gameId,PDO::PARAM_INT);
+
+}
+
 function startGameInDB(int $roomId)
 {
     global $dbc;
@@ -183,7 +198,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_GAMETYPE = ?,
     R_DIFFICULTY = ?,
     R_PRANKREQUIRED = ?,
-    R_DISABLECAMPAIGNALTEXIT = ?
+    R_DISABLECAMPAIGNALTEXIT = ?,
+    R_ISPUBLIC = ?
     WHERE R_ID = ?");
 
     $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
@@ -194,7 +210,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
     $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
     $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
-    $request->bindParam(9,$roomId,PDO::PARAM_INT);
+    $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
+    $request->bindParam(10,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 
@@ -262,12 +279,28 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
     logWarn("Register completed");
 }
 
+function updateConnection($connection,$steamId)
+{
+    global $dbc;
+
+    $connectionHash = md5(strval($connection));
+
+    $request = $dbc->prepare("UPDATE activeConnections SET C_CONNECTION_HASH = ? WHERE C_STEAMID = ?");
+    $request->bindParam(1,$connectionHash,PDO::PARAM_STR);
+    $request->bindParam(2,$steamId,PDO::PARAM_STR);
+
+    $request->execute();
+
+}
+
 function verifyConnection($steamTicket,$checkHost=false)
 {
     logWarn("Verifying connection");
+    var_export($steamTicket);
     global $dbc;
     $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ?");
     $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
+    $ticketRequest->debugDumpParams();
     $ticketRequest->execute();
     $res = $ticketRequest->fetch();
     if($res && count($res) > 0)
@@ -385,6 +418,41 @@ function checkKick($gameId, $steamId)
     $res = $request->fetchAll();
 
     return (count($res) > 0);
+}
+
+function checkPlayerCountOfGame($gameId)
+{
+    global $dbc;
+    $request = $dbc->prepare("SELECT COUNT(*) FROM activeConnections WHERE C_ROOMID = ? AND C_ISHOST = 0");
+    $request->bindParam(1,$gameId,PDO::PARAM_INT);
+
+    $request->execute();
+    $res = $request->fetch();
+
+    return $res[0];
+}
+
+function markGameEnd($gameId)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames SET R_HASENDED = 1 WHERE R_ID = ?");
+    $request->bindParam(1,$gameId,PDO::PARAM_INT);
+
+    $request->execute();
+}
+
+function getPublicBingoGames()
+{
+    global $dbc;
+
+    $request = $dbc->prepare("select DISTINCT R_ID, R_CURRENTPLAYERS, R_MAXPLAYERS, R_DIFFICULTY, R_PASSWORD, C_USERNAME from currentGames 
+    LEFT JOIN activeConnections ON currentGames.R_HOSTEDBY = activeConnections.C_STEAMID 
+    WHERE currentGames.R_HASSTARTED = 0 AND currentGames.R_ISPUBLIC = 1 AND activeConnections.C_USERNAME IS NOT NULL AND activeConnections.C_ROOMID = currentGames.R_ID");
+    $request->execute();
+
+    $res = $request->fetchAll();
+
+    return $res;
 }
 
 
