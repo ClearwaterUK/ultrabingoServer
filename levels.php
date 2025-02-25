@@ -73,6 +73,12 @@ $mapPools['primeSanctums'] = array(
     new LevelInformation("WAIT OF THE WORLD","Level P-2")
 );
 
+// Encore
+$mapPools['encore'] = array(
+    new LevelInformation("THIS HEAT, THIS EVIL HEAT","Level 0-E"),
+    new LevelInformation("...THEN FELL THE ASHES","Level 1-E")
+);
+
 // Angry Standard
 $mapPools['angryStandard'] = array(
     new LevelInformation("DARKCASTLE","grapes.Castle",true,
