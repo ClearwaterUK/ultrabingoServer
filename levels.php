@@ -75,7 +75,7 @@ $mapPools['primeSanctums'] = array(
 
 // Encore
 $mapPools['encore'] = array(
-    new LevelInformation("THIS HEAT, THIS EVIL HEAT","Level 0-E"),
+    new LevelInformation("THIS HEAT, AN EVIL HEAT","Level 0-E"),
     new LevelInformation("...THEN FELL THE ASHES","Level 1-E")
 );
 
