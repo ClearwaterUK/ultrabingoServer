@@ -466,5 +466,11 @@ function getPublicBingoGames()
     return $res;
 }
 
+function loadEnvFile($path):void
+{
+    $dotenv = Dotenv\Dotenv::createImmutable($path);
+    $dotenv->load();
+}
+
 
 ?>

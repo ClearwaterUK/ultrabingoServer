@@ -6,74 +6,36 @@ require __DIR__ . '/vendor/autoload.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-//Can't do 8080 on local because 8080 is reserved by Steam.
-$PORT = 2052;
-
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
-
 $CLIENT_VERSION = '1.0.6';
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
 
-require_once('functions.php');
+require_once(__DIR__.'/src/functions.php');
+require_once (__DIR__.'/src/logging.php');
+
+logInfo("Loading environment variables");
+loadEnvFile(__DIR__);
+$PORT = $_ENV['SERVER_PORT'];
 
 //Load all the NetworkMessage classes from the folder
 $networkMessageFolder = glob(__DIR__.'/NetworkMessages/*.php');
-foreach($networkMessageFolder as $file)
-{
-    require_once $file;
-}
-
-function decodeMessage($message)
-{
-    return json_decode(base64_decode($message),true);
-}
-
-function sendEncodedMessage($messageToSend,$connection):void
-{
-    try {
-        $encodedMessage = base64_encode(json_encode($messageToSend));
-        $connection->text($encodedMessage);
-    }
-    catch(Exception $e)
-    {
-        logError("Failed to send message to connection!");
-        logError($e->getMessage());
-        logError($e->getTrace());
-    }
-
-}
-
-function loadEnvFile():void
-{
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->load();
-}
-
-require_once (__DIR__.'/logging.php');
-
-logInfo("Loading environment variables");
-loadEnvFile();
-$PORT = $_ENV['SERVER_PORT'];
+foreach($networkMessageFolder as $file) { require_once $file;}
 
 logInfo("Loading level list");
-require_once (__DIR__.'/levels.php');
+require_once (__DIR__.'/src/levels.php');
 
 logInfo("Initialising DB configuration");
-require_once (__DIR__.'/DB.php');
-if(!isset($_ENV['PERSIST_TABLES']) || $_ENV['PERSIST_TABLES'] == 0)
-{
-    clearTables();
-}
-
+require_once (__DIR__.'/src/DB.php');
+if(!isset($_ENV['PERSIST_TABLES']) || $_ENV['PERSIST_TABLES'] == 0) {logWarn("Clearing tables");clearTables();}
 
 logInfo("Starting up game coordinator");
-require_once(__DIR__.'/game.php');
+require_once(__DIR__.'/src/game.php');
 
 logInfo("Setting up WebSocket router");
-require_once (__DIR__.'/websocketRouter.php');
+require_once (__DIR__.'/src/websocketRouter.php');
 
 logMessage("Starting webserver on port ".$PORT);
 $server = new WebSocket\Server($PORT,false);

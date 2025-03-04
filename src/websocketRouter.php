@@ -1,5 +1,23 @@
 <?php
 
+function decodeMessage($message)
+{
+    return json_decode(base64_decode($message),true);
+}
+
+function sendEncodedMessage($messageToSend,$connection):void
+{
+    try {
+        $encodedMessage = base64_encode(json_encode($messageToSend));
+        $connection->text($encodedMessage);
+    }
+    catch(Exception $e)
+    {
+        logError("Failed to send message to connection!");
+        logError($e->getMessage());
+        logError($e->getTrace());
+    }
+}
 
 function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exception $exception):void
 {
