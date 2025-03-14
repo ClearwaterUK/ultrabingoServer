@@ -323,7 +323,8 @@ function verifyConnection($steamTicket,$checkHost=false)
         //If requested, verify if the steamID is the host of the game we're sending messages to.
         $hostMatch = ($checkHost ? ($res[3] == 1) : true);
 
-        logInfo("Connection valid");
+        logInfo("Connection seems valid");
+        echo($ticketMatch . "-".$gameMatch."-".$hostMatch);
         return ($ticketMatch && $gameMatch && $hostMatch);
     }
     else
