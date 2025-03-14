@@ -309,8 +309,9 @@ function verifyConnection($steamTicket,$checkHost=false)
     logWarn("Verifying connection");
     var_export($steamTicket);
     global $dbc;
-    $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ?");
+    $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ? AND C_ROOMID = ?");
     $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
+    $ticketRequest->bindParam(2,$steamTicket['gameId']);
     $ticketRequest->debugDumpParams();
     $ticketRequest->execute();
     $res = $ticketRequest->fetch();
@@ -323,9 +324,20 @@ function verifyConnection($steamTicket,$checkHost=false)
         //If requested, verify if the steamID is the host of the game we're sending messages to.
         $hostMatch = ($checkHost ? ($res[3] == 1) : true);
 
-        logInfo("Connection seems valid");
-        echo($ticketMatch . "-".$gameMatch."-".$hostMatch);
-        return ($ticketMatch && $gameMatch && $hostMatch);
+        $check = $ticketMatch && $gameMatch && $hostMatch;
+        if($check)
+        {
+            logInfo("Connection valid");
+            return true;
+        }
+        else
+        {
+            logError("Connection invalid!");
+            logWarn("Steam ticket match: ".$ticketMatch);
+            logWarn("Game match: ".$gameMatch);
+            if($checkHost){logWarn("Host match: ".$hostMatch);}
+            return false;
+        }
     }
     else
     {
