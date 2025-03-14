@@ -71,6 +71,8 @@ class GameGrid
 
     public array $levelTable; //Array containing the level id and the associated coordinates on the grid.
 
+    public array $reserveLevels; //Array containing levels to replace in a reroll vote.
+
     public function populateGrid($mapPoolIds):void
     {
         global $mapPools;
@@ -102,6 +104,7 @@ class GameGrid
                 unset($levelPool[$selectedIndex]);
             }
         }
+        $this->reserveLevels = $levelPool;
     }
 
     public function __construct($size=3,$mapPoolIds="")
@@ -176,6 +179,8 @@ class Game
 
     public GameSettings $gameSettings; //Settings for the game, represented by a GameSettings object.
 
+    public bool $hasEnded;
+
     public string $firstMapClaimed;
     public string $lastMapClaimed;
 
@@ -187,11 +192,22 @@ class Game
     public string $bestStatMap;
     public string $bestStatValue;
 
+    public bool $isVoteOngoing;
+    public int $currentVotes;
+    public string $votePosition;
+    public int $voteThreshold;
+    public array $playerVotePerms;
+    public array $playersAlreadyVoted;
+
+    public $rerollMapPool;
+
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
     {
         $this->currentPlayers = [];
         $this->grid = [];
         $this->gameId = $gameId;
+
+        $this->hasEnded = false;
 
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
         $host = new GamePlayer($hostSteamName,$hostSteamId,$hostConnection);
@@ -211,6 +227,150 @@ class Game
 
         $this->bestStatValue = 0;
         $this->bestStatMap = "";
+
+        $this->isVoteOngoing = false;
+        $this->currentVotes = 0;
+        $this->voteThreshold = 0;
+        $this->votePosition = "";
+        $this->playerVotePerms = array();
+        $this->playersAlreadyVoted = array();
+    }
+
+    public function isVoteActive()
+    {
+        return $this->isVoteOngoing;
+    }
+
+    public function cancelRerollVote()
+    {
+        $this->isVoteOngoing = false;
+        $this->currentVotes = 0;
+    }
+
+    public function hasPlayerVoted($steamId)
+    {
+        return in_array($steamId,$this->playersAlreadyVoted);
+    }
+
+
+    public function resetVoteVariables()
+    {
+        $this->isVoteOngoing = false;
+        $this->currentVotes = 0;
+        $this->votePosition = "";
+        $this->playersAlreadyVoted = array();
+    }
+
+    public function rerollMap($x,$y)
+    {
+        $oldMapId = $this->grid->levelTable[$x."-".$y]->levelId;
+        $oldMapName = $this->grid->levelTable[$x."-".$y]->levelName;
+        $index = array_rand($this->grid->reserveLevels);
+        $levelObj = $this->grid->reserveLevels[$index];
+        $newLevel = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$x,$y,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
+        $this->grid->levelTable[$x."-".$y] = $newLevel;
+
+        logMessage("New rolled map is: ".$newLevel->levelName);
+
+        unset($this->grid->reserveLevels[$index]);
+
+        //Broadcast the changed level to all connected players.
+
+        $rerollNotif = new RerollSuccessNotification($oldMapId,$oldMapName,$newLevel,$x,$y);
+        $em = new EncapsulatedMessage("RerollSuccess",json_encode($rerollNotif));
+
+        foreach($this->currentPlayers as $playerSteamId => $playerObj)
+        {
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+        }
+    }
+
+    public function handleVoteEnd()
+    {
+        if($this->hasEnded)
+        {
+            return;
+        }
+
+        logMessage("Recieved ".$this->currentVotes.", min required was ".$this->voteThreshold);
+
+        if($this->currentVotes >= $this->voteThreshold)
+        {
+            logMessage("VOTE SUCCESSFUL, REROLLING MAP");
+            $this->rerollMap($this->votePosition[0],$this->votePosition[2]);
+        }
+        else
+        {
+            logMessage("VOTE FAILED");
+            $rerollExpire = new RerollExpireNotification($this->grid->levelTable[$this->votePosition]->levelName);
+            $em = new EncapsulatedMessage("RerollExpire",json_encode($rerollExpire));
+            foreach($this->currentPlayers as $playerSteamId => $playerObj)
+            {
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+            }
+        }
+
+        $this->resetVoteVariables();
+    }
+
+    public function addPlayerVote($steamId)
+    {
+        $this->currentVotes++;
+        array_push($this->playersAlreadyVoted,$steamId);
+
+        $voteNotify = new RerollVoteNotification($steamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$steamId]->username,$this->currentVotes,$this->voteThreshold,0,1);
+
+        $em = new EncapsulatedMessage("RerollVote",json_encode($voteNotify));
+
+        foreach($this->currentPlayers as $playerSteamId => $playerObj)
+        {
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+        }
+    }
+
+    public function canPlayerStartVote($steamId)
+    {
+        var_export($this->playerVotePerms);
+        if(array_key_exists($steamId,$this->playerVotePerms))
+        {
+            return $this->playerVotePerms[$steamId];
+        }
+        else return false;
+    }
+
+    public function startRerollVote($playerSteamId,$column,$row)
+    {
+        global $voteTimers;
+        global $VOTE_TIMER;
+
+        //Add a timer for the reroll vote
+        $test = new EvTimer($VOTE_TIMER-1,0,function()
+        {
+            if($this->isVoteOngoing) {
+                logWarn("Reroll vote timer for gameId ".$this->gameId. " has expired, handling");
+                $this->handleVoteEnd();
+            }
+
+        });
+        array_push($voteTimers,array($this->gameId => $test));
+
+        $this->isVoteOngoing = true;
+        $this->playerVotePerms[$playerSteamId] = false;
+        $this->votePosition = $column."-".$row;
+
+        $this->addPlayerVote($playerSteamId);
+
+        //Notify players that vote has started
+        $voteNotify = new RerollVoteNotification($playerSteamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$playerSteamId]->username,$this->currentVotes,$this->voteThreshold,$VOTE_TIMER,0);
+
+        $em = new EncapsulatedMessage("RerollVote",json_encode($voteNotify));
+
+        foreach($this->currentPlayers as $playerSteamId => $playerObj)
+        {
+            sendEncodedMessage($em,$playerObj->websocketConnection);
+        }
+
+        logWarn("Timer set");
     }
 
     //Adds a player to the current Game.
@@ -563,10 +723,17 @@ class GameController
             $gameToStart->startTime = new DateTime();
             logInfo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A"));
 
-            //Send the game start signal to all players in the game
+            //Set minimum reroll vote treshold
+            $gameToStart->voteThreshold = ceil(count($gameToStart->currentPlayers)*0.66);
+            logInfo("Minimum votes for map reroll is ".$gameToStart->voteThreshold);
+
             logInfo("Telling all players of game ".$gameToStart->gameId . " to start");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
+                //Initialise vote status for all players
+                $gameToStart->playerVotePerms[$playerSteamId] = true;
+
+                //Send the game start signal to all players in the game
                 $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
 
                 $message = new EncapsulatedMessage("StartGame",json_encode($startSignal));
@@ -679,6 +846,7 @@ class GameController
     public function destroyGame(Int $gameId):void
     {
         logWarn("Destroying game id ".$gameId . " from game coordinator");
+        $this->currentGames[$gameId]->hasEnded = true;
         unset($this->currentGames[$gameId]);
 
         logWarn("Clearing kicks");
@@ -702,7 +870,8 @@ class GameController
 
             //Check that the submitted coords match.
             $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-            if($levelInCard->levelId == $submissionData['levelId'])
+            logWarn($submissionData['levelName'] . "-" . $levelInCard->levelId);
+            if($submissionData['levelName'] == $levelInCard->levelId)
             {
                 logMessage("Level ID matches, pre-submission all validated");
                 return true;

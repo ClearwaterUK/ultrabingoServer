@@ -9,9 +9,13 @@ ini_set('display_errors', 1);
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
 $CLIENT_VERSION = '1.0.6';
+$VOTE_TIMER = 25;
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
+
+// Structure: gameId -> EvTimer
+$voteTimers = array();
 
 require_once(__DIR__.'/src/functions.php');
 require_once (__DIR__.'/src/logging.php');
@@ -37,6 +41,8 @@ require_once(__DIR__.'/src/game.php');
 logInfo("Setting up WebSocket router");
 require_once (__DIR__.'/src/websocketRouter.php');
 
+
+
 logMessage("Starting webserver on port ".$PORT);
 $server = new WebSocket\Server($PORT,false);
 try {
@@ -54,6 +60,9 @@ try {
             {
                 onMessageRecieved($message->getContent(), $connection);
             }
+        })
+        ->onTick(function ($client) {
+            Ev::run(EV::RUN_NOWAIT);
         })
         ->onPing(function ($client, $connection, $message) {
             if ($client <> null && $connection <> null && $message <> null) {

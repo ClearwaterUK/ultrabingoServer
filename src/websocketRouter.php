@@ -329,12 +329,24 @@ function onMessageRecieved($message,$connection):void
                     $submitResult = $gameCoordinator->submitRun($receivedJson);
                     if($submitResult >= 0)
                     {
+                        $game = $gameCoordinator->currentGames[$gameId];
+                        $pos = $receivedJson['row']."-".$receivedJson['column'];
+
+                        //Check if the claimed level is the subject of a reroll vote.
+                        //If so, cancel the reroll vote.
+                        $mapIsBeingVoted = $game->votePosition == $pos;
+                        if($mapIsBeingVoted)
+                        {
+                            logWarn("CLAIMED MAP IS BEING VOTED ON, CANCELLING VOTE");
+                            $game->resetVoteVariables();
+                        }
+
                         //Check if the claimed level resulted in a bingo.
                         $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
 
                         $levelDisplayName = $gameCoordinator->currentGames[$gameId]->grid->levelTable[$receivedJson['row']."-".$receivedJson['column']]->levelName;
 
-                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style']);
+                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style'],$mapIsBeingVoted);
 
                         logMessage("Notifying all players in game");
                         foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
@@ -342,10 +354,11 @@ function onMessageRecieved($message,$connection):void
                             $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
                             sendEncodedMessage($message,$playerObj->websocketConnection);
                         }
-                        logMessage("Done");
+
                         if($hasObtainedBingo)
                         {
                             $gameToEnd = $gameCoordinator->currentGames[$gameId];
+                            $gameToEnd->hasEnded = true;
 
                             //Get all the necessary endgame stats to send to each player.
                             $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
@@ -356,7 +369,7 @@ function onMessageRecieved($message,$connection):void
                             $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
                             logMessage("Elapsed time of game: ".$elapsedTime);
 
-                            logWarn("Marking game as ended in DB");
+
                             markGameEnd($gameId);
 
                             $claims = $gameToEnd->numOfClaims;
@@ -467,6 +480,44 @@ function onMessageRecieved($message,$connection):void
 
                 sendEncodedMessage($em,$connection);
 
+                break;
+            }
+            case "RerollRequest":
+            {
+                global $voteTimers;
+                if(verifyConnection($receivedJson['steamTicket']))
+                {
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        $game = $gameCoordinator->currentGames[$gameId];
+
+                        logMessage("Requesting reroll of map at ".$receivedJson['column']."-".$receivedJson['row'] . " in game " . $gameId);
+
+                        //Start by checking if a vote is already active or not.
+                        if($game->isVoteActive())
+                        {
+                            //If vote is active, make sure player hasn't already voted.
+                            if(!$game->hasPlayerVoted($receivedJson['steamId']))
+                            {
+                                $game->addPlayerVote($receivedJson['steamId']);
+                            }
+                        }
+                        else
+                        {
+                            logMessage("Vote not active in game, starting");
+                            //Check if player can start vote.
+                            if($game->canPlayerStartVote($receivedJson['steamId']))
+                            {
+                                $game->startRerollVote($receivedJson['steamId'],$receivedJson['column'],$receivedJson['row']);
+                            }
+                            else
+                            {
+                                logWarn("Player can't start vote, or has already used their start vote!");
+                            }
+                        }
+                    }
+                }
                 break;
             }
             default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
