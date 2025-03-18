@@ -341,46 +341,8 @@ function onMessageRecieved($message,$connection):void
                             $game->resetVoteVariables();
                         }
 
-                        //Check if the claimed level resulted in a bingo.
-                        $hasObtainedBingo = $gameCoordinator->currentGames[$gameId]->checkForBingo($receivedJson['team'],$receivedJson['row'],$receivedJson['column']);
-
-                        $levelDisplayName = $gameCoordinator->currentGames[$gameId]->grid->levelTable[$receivedJson['row']."-".$receivedJson['column']]->levelName;
-
-                        $claimBroadcast = new ClaimedLevelBroadcast($receivedJson['playerName'],$receivedJson['team'],$levelDisplayName,$submitResult,$receivedJson['row'],$receivedJson['column'],$receivedJson['time'],$receivedJson['style'],$mapIsBeingVoted);
-
-                        logMessage("Notifying all players in game");
-                        foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
-                        {
-                            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
-                            sendEncodedMessage($message,$playerObj->websocketConnection);
-                        }
-
-                        if($hasObtainedBingo)
-                        {
-                            $gameToEnd = $gameCoordinator->currentGames[$gameId];
-                            $gameToEnd->hasEnded = true;
-
-                            //Get all the necessary endgame stats to send to each player.
-                            $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
-
-                            $endTime = new DateTime();
-                            logWarn("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A"));
-
-                            $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
-                            logMessage("Elapsed time of game: ".$elapsedTime);
-
-
-                            markGameEnd($gameId);
-
-                            $claims = $gameToEnd->numOfClaims;
-
-                            $bingoSignal = new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap);
-                            foreach($gameCoordinator->currentGames[$gameId]->currentPlayers as $playerSteamId => &$playerObj)
-                            {
-                                $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
-                                sendEncodedMessage($message,$playerObj->websocketConnection);
-                            }
-                        }
+                        //Call onMapClaim to see if the map claim causes the game to end or not.
+                        $gameCoordinator->currentGames[$gameId]->gamemode->onMapClaim($gameCoordinator->currentGames[$gameId],$receivedJson,$submitResult,$mapIsBeingVoted);
                     }
                 }
                 else

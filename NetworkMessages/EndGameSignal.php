@@ -12,7 +12,10 @@ class EndGameSignal
     public $bestStatValue;
     public $bestStatMap;
 
-    public function __construct($team,$winningPlayers,$timeElapsed,$claims,$firstMapClaimed,$lastMapClaimed,$bestStatValue,$bestStatMap)
+    public $endStatus;
+    public $tiedTeams;
+
+    public function __construct($team,$winningPlayers,$timeElapsed,$claims,$firstMapClaimed,$lastMapClaimed,$bestStatValue,$bestStatMap,$endStatus=0,$tiedTeams=array())
     {
         $this->winningTeam = $team;
         $this->winningPlayers = $winningPlayers;
@@ -23,6 +26,9 @@ class EndGameSignal
 
         $this->bestStatValue = $bestStatValue;
         $this->bestStatMap = $bestStatMap;
+
+        $this->endStatus = $endStatus;
+        $this->tiedTeams = $tiedTeams;
     }
 }
 

@@ -135,12 +135,15 @@ class GameSettings
     public int $maxPlayers;
     public int $maxTeams;
     public int $teamComposition;
+    public int $gamemode;
     public int $gameType;
     public int $difficulty;
     public int $gridSize;
     public bool $requiresPRank;
     public bool $disableCampaignAltExits;
     public int $gameVisibility;
+
+    public int $dominationTimer;
 
     public $selectedMapPools;
 
@@ -150,16 +153,21 @@ class GameSettings
 
     public function __construct()
     {
+        global $DOMINATION_TIME_MINUTES;
+
         $this->maxPlayers = 8;
         $this->maxTeams = 4;
         $this->teamComposition = 0;             //Randomised teams by default
         $this->gridSize = 0;                    //3x3 by default
+        $this->gamemode = 0;                    //Normal bingo by default
         $this->gameType = 0;                    //Time by default
         $this->difficulty = 2;                  //Standard by default
         $this->requiresPRank = false;           //P-Rank not requried by default
         $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
+
+        $this->dominationTimer = $DOMINATION_TIME_MINUTES;
     }
 }
 
@@ -178,6 +186,8 @@ class Game
     public array $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
 
     public GameSettings $gameSettings; //Settings for the game, represented by a GameSettings object.
+
+    public BaseGamemode $gamemode; //Gamemode for the game, represented by a parent BingoGamemode object.
 
     public bool $hasEnded;
 
@@ -330,7 +340,6 @@ class Game
 
     public function canPlayerStartVote($steamId)
     {
-        var_export($this->playerVotePerms);
         if(array_key_exists($steamId,$this->playerVotePerms))
         {
             return $this->playerVotePerms[$steamId];
@@ -659,6 +668,7 @@ class GameController
             $newSettings->maxPlayers = $settings['maxPlayers'];
             $newSettings->maxTeams = $settings['maxTeams'];
             $newSettings->teamComposition = $settings['teamComposition'];
+            $newSettings->gamemode = $settings['gamemode'];
             $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->gridSize = $settings['gridSize'];
@@ -679,7 +689,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$wereTeamsReset);
+            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset);
             $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
 
             updateGameSettings($settings['roomId'],$newSettings);
@@ -713,9 +723,11 @@ class GameController
                 $gameToStart->setTeams();
             }
 
-
             $gameToStart->gameState = GameState::inGame;
             $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
+
+            $gameToStart->gamemode = makeGamemode($gameToStart->gameSettings->gamemode);
+            $gameToStart->gamemode->setup($gameToStart);
 
             startGameInDB($gameId);
 
@@ -736,7 +748,14 @@ class GameController
                 //Send the game start signal to all players in the game
                 $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
 
-                $message = new EncapsulatedMessage("StartGame",json_encode($startSignal));
+                try {
+                    $message = new EncapsulatedMessage("StartGame",json_encode($startSignal,JSON_THROW_ON_ERROR));
+                }
+                catch(Exception $e)
+                {
+                    logError($e->getMessage());
+                }
+
                 sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }

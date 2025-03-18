@@ -10,6 +10,7 @@ $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
 $CLIENT_VERSION = '1.0.6';
 $VOTE_TIMER = 25;
+$DOMINATION_TIME_MINUTES = 30;
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
@@ -37,6 +38,7 @@ if(!isset($_ENV['PERSIST_TABLES']) || $_ENV['PERSIST_TABLES'] == 0) {logWarn("Cl
 
 logInfo("Starting up game coordinator");
 require_once(__DIR__.'/src/game.php');
+require_once (__DIR__.'/src/Gamemode.php');
 
 logInfo("Setting up WebSocket router");
 require_once (__DIR__.'/src/websocketRouter.php');
