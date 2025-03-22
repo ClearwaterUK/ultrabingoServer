@@ -107,7 +107,7 @@ class DominationGamemode extends BaseGamemode implements IGameMode
             $winningPlayers = array();
         }
         //Check if there is a tie between 2 or more teams.
-        else if (max(array_count_values($tracker) >= 2))
+        else if (max(array_count_values($tracker)) >= 2)
         {
             logWarn("TIE");
             $maxVal = max($tracker);
