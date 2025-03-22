@@ -418,7 +418,12 @@ function onMessageRecieved($message,$connection):void
             {
                 global $CLIENT_VERSION;
                 $verification = verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
-                $message = new ValidateModlist($verification,$CLIENT_VERSION);
+
+                //Also send back the MOTD.
+                $motd = file_get_contents(__DIR__."/../motd.txt");
+                var_export($motd);
+                $message = new ValidateModlist($verification,$CLIENT_VERSION,$motd);
+
                 $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
                 sendEncodedMessage($em,$connection);
                 break;
