@@ -99,7 +99,7 @@ class DominationGamemode extends BaseGamemode implements IGameMode
         $tiedTeams = array();
 
         //If no claims were made in the game, no winner.
-        var_export(array_count_values($tracker));
+        var_export($claims);
         if($claims == 0)
         {
             logWarn("No claims were made during this game!");
@@ -108,11 +108,8 @@ class DominationGamemode extends BaseGamemode implements IGameMode
             $winningPlayers = array();
         }
         //Check if there is a tie between 2 or more teams.
-
         //Get the max value from $tracker, then check if count(array_keys($tracker)) > 1
-        $max = max($tracker);
-
-        if (array_count_values($tracker)[$max] > 1)
+        else if (array_count_values($tracker)[max($tracker)] > 1)
         {
             logWarn("TIE");
             $maxVal = max($tracker);
@@ -129,8 +126,6 @@ class DominationGamemode extends BaseGamemode implements IGameMode
             logWarn("Winning team: ".$winningTeam);
             $winningPlayers = array_values($game->teams[$winningTeam]);
         }
-
-
         $endTime = new DateTime();
         logWarn("Ending game ".$game->gameId." at ".$endTime->format("Y-m-d h:i:s A"));
 
