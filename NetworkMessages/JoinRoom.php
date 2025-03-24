@@ -19,11 +19,13 @@ class JoinRoomNotification
 {
     public $username;
     public $steamId;
+    public $rank;
 
-    public function __construct($playerName,$steamId)
+    public function __construct($playerName,$steamId,$rank="")
     {
         $this->username = $playerName;
         $this->steamId = $steamId;
+        $this->rank = $rank;
     }
 }
 

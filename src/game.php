@@ -119,14 +119,16 @@ class GamePlayer
 {
     public string $steamId;
     public string $username;
+    public string $rank;
     public \WebSocket\Connection $websocketConnection;
     public $team;
 
-    public function __construct($playerName,$playerSteamId,$playerConnection)
+    public function __construct($playerName,$playerSteamId,$playerConnection,$playerRank="")
     {
         $this->username = $playerName;
         $this->websocketConnection = $playerConnection;
         $this->steamId = $playerSteamId;
+        $this->rank = $playerRank;
     }
 }
 
@@ -211,7 +213,7 @@ class Game
 
     public $rerollMapPool;
 
-    public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId)
+    public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId,$rank)
     {
         $this->currentPlayers = [];
         $this->grid = [];
@@ -220,7 +222,7 @@ class Game
         $this->hasEnded = false;
 
         //When a game is created, create a GamePlayer representing the host and set them as gameHost.
-        $host = new GamePlayer($hostSteamName,$hostSteamId,$hostConnection);
+        $host = new GamePlayer($hostSteamName,$hostSteamId,$hostConnection,$rank);
         $this->addPlayerToGame($host,$hostSteamId,true);
 
         //Set the default settings.
@@ -588,19 +590,19 @@ class GameController
 {
     public array $currentGames; //A list of current game's that are ongoing. Each entry is represented by an id and an associated Game object.
 
-    public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId)
+    public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId, string $rank)
     {
         logInfo("Creating game with id ".$gameId.", host is ".$hostSteamName.", SteamID is ".$hostSteamId);
-        $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId,$hostSteamId);
+        $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId,$hostSteamId,$rank);
         $this->currentGames[$gameId] = $gameToCreate;
 
         return $gameToCreate;
     }
 
-    public function joinGame(int $gameId, string $playerName, string $steamId, WebSocket\Connection $playerConnection)
+    public function joinGame(int $gameId, string $playerName, string $steamId, WebSocket\Connection $playerConnection, string $rank)
     {
         //Add the new player to the player list of the Game.
-        $playerToAdd = new GamePlayer($playerName,$steamId,$playerConnection);
+        $playerToAdd = new GamePlayer($playerName,$steamId,$playerConnection,$rank);
         $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
 
         //Broadcast the new player joining to everyone else in the current Game.

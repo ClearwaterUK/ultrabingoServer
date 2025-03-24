@@ -480,6 +480,21 @@ function getPublicBingoGames()
     return $res;
 }
 
+function fetchAvailableRanks($steamId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("SELECT GROUP_CONCAT(R_RANKNAME) AS rankNames FROM ranks r LEFT JOIN userranks ur ON r.R_ID = ur.U_RANKID WHERE ur.U_STEAMID = ?");
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetch();
+
+    if($res['rankNames'] == null) {return "";}
+    return $res['rankNames'];
+
+}
+
 function loadEnvFile($path):void
 {
     $dotenv = Dotenv\Dotenv::createImmutable($path);

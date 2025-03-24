@@ -61,3 +61,27 @@ create table bannedPlayers
     B_STEAMID varchar(64),
     B_IP varchar(32)
 );
+
+create table ranks
+(
+    R_ID int NOT NULL AUTO_INCREMENT primary key,
+    R_RANKNAME varchar(64)
+);
+
+insert into ranks(R_RANKNAME) values
+    ('<color=#e74c3c>DEVELOPER</color>'),
+    ('<color=#f1c40f>TESTER</color>'),
+    ('<color=green>DONATOR</color>'),
+    ('<color=#35a8ff>LEGACY MAPPER</color>'),
+    ('<color=#35a8ff>MAPPER</color>'),
+    ('<color=#ffce84>MODDER</color>'),
+    ('<color=#aea8ff>SPEEDRUNNER</color>'),
+    ('<color=red>NEW BLOOD</color>');
+
+create table userRanks
+(
+    U_ID int NOT NULL AUTO_INCREMENT primary key,
+    U_STEAMID varchar(64),
+    U_RANKID int NOT NULL,
+    FOREIGN KEY (U_RANKID) REFERENCES ranks(R_ID)
+);

@@ -158,7 +158,7 @@ function onMessageRecieved($message,$connection):void
                 {
                     //Create the room
                     $status = "ok";
-                    $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"]);
+                    $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"],$receivedJson['rank']);
                     logMessage("Game created and set up with id ".$roomId." , password " . $roomPassword);
                     $crr = new CreateRoomResponse($status,$roomId,$roomPassword,$game);
                     $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
@@ -187,7 +187,7 @@ function onMessageRecieved($message,$connection):void
                     $canJoin = checkJoinEligibility($game,$receivedJson['steamId'],explode(":",$connection->getRemoteName())[0]);
                     if($canJoin == 0)
                     {
-                        $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection);
+                        $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection,$receivedJson['rank']);
                         $crr = new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]);
                         $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
                         sendEncodedMessage($em,$connection);
@@ -419,10 +419,18 @@ function onMessageRecieved($message,$connection):void
                 global $CLIENT_VERSION;
                 $verification = verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
 
-                //Also send back the MOTD.
+                //Fetch the ranks available for the current SteamID.
+                $availableRanks = fetchAvailableRanks($receivedJson['steamId']);
+                if($availableRanks == "")
+                {
+                    logInfo("No ranks for requesting SteamID");
+                }
+
+
+                //Fetch the current message of the day.
                 $motd = file_get_contents(__DIR__."/../motd.txt");
-                var_export($motd);
-                $message = new ValidateModlist($verification,$CLIENT_VERSION,$motd);
+
+                $message = new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks);
 
                 $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
                 sendEncodedMessage($em,$connection);
