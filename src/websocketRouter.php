@@ -495,6 +495,18 @@ function onMessageRecieved($message,$connection):void
                 }
                 break;
             }
+            case "MapPing":
+            {
+                if(verifyConnection($receivedJson['ticket']))
+                {
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        $gameCoordinator->mapPing($gameId,$receivedJson['team'],$receivedJson['column'],$receivedJson['row']);
+                    }
+                }
+                break;
+            }
             default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
         }
     }

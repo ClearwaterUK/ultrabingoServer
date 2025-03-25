@@ -1007,6 +1007,18 @@ class GameController
         }
     }
 
+    public function mapPing($gameId,$team,$row,$column)
+    {
+        $currentGame = $this->currentGames[$gameId];
+        foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
+            if($playerObj->team == $team) {
+                $message = new MapPingNotification($row,$column);
+                $em = new EncapsulatedMessage("MapPing",json_encode($message));
+                sendEncodedMessage($em,$playerObj->websocketConnection);
+            }
+        }
+    }
+
     public function __construct()
     {
         date_default_timezone_set("Europe/Paris");
