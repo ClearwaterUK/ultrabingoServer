@@ -287,13 +287,10 @@ class Game
         unset($this->grid->reserveLevels[$index]);
 
         //Broadcast the changed level to all connected players.
-
-        $rerollNotif = new RerollSuccessNotification($oldMapId,$oldMapName,$newLevel,$x,$y);
-        $em = new EncapsulatedMessage("RerollSuccess",json_encode($rerollNotif));
-
+        $message = buildNetworkMessage("RerollSuccess",new RerollSuccessNotification($oldMapId,$oldMapName,$newLevel,$x,$y));
         foreach($this->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
+            sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
 
@@ -314,11 +311,11 @@ class Game
         else
         {
             logMessage("VOTE FAILED");
-            $rerollExpire = new RerollExpireNotification($this->grid->levelTable[$this->votePosition]->levelName);
-            $em = new EncapsulatedMessage("RerollExpire",json_encode($rerollExpire));
+
+            $message = buildNetworkMessage("RerollExpire",new RerollExpireNotification($this->grid->levelTable[$this->votePosition]->levelName));
             foreach($this->currentPlayers as $playerSteamId => $playerObj)
             {
-                sendEncodedMessage($em,$playerObj->websocketConnection);
+                sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
 
@@ -330,13 +327,10 @@ class Game
         $this->currentVotes++;
         array_push($this->playersAlreadyVoted,$steamId);
 
-        $voteNotify = new RerollVoteNotification($steamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$steamId]->username,$this->currentVotes,$this->voteThreshold,0,1);
-
-        $em = new EncapsulatedMessage("RerollVote",json_encode($voteNotify));
-
+        $message = buildNetworkMessage("RerollVote", new RerollVoteNotification($steamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$steamId]->username,$this->currentVotes,$this->voteThreshold,0,1));
         foreach($this->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
+            sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
 
@@ -372,13 +366,11 @@ class Game
         $this->addPlayerVote($playerSteamId);
 
         //Notify players that vote has started
-        $voteNotify = new RerollVoteNotification($playerSteamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$playerSteamId]->username,$this->currentVotes,$this->voteThreshold,$VOTE_TIMER,0);
-
-        $em = new EncapsulatedMessage("RerollVote",json_encode($voteNotify));
+        $message = buildNetworkMessage("RerollVote",new RerollVoteNotification($playerSteamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$playerSteamId]->username,$this->currentVotes,$this->voteThreshold,$VOTE_TIMER,0));
 
         foreach($this->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
+            sendEncodedMessage($message,$playerObj->websocketConnection);
         }
 
         logWarn("Timer set");
@@ -425,12 +417,11 @@ class Game
 
         updateRoomJoinPermission($this->gameId,0);
 
-        $ud = new UpdateTeams(0);
-        $em = new EncapsulatedMessage("UpdateTeamsNotif",json_encode($ud));
+        $message = buildNetworkMessage("UpdateTeamsNotif",new UpdateTeams(0));
 
         foreach($this->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
+            sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
 
@@ -441,12 +432,11 @@ class Game
         $this->gameSettings->hasManuallySetTeams = false;
         updateRoomJoinPermission($this->gameId,1);
 
-        $ud = new UpdateTeams(1);
-        $em = new EncapsulatedMessage("UpdateTeamsNotif",json_encode($ud));
+        $message = buildNetworkMessage("UpdateTeamsNotif",new UpdateTeams(1));
 
         foreach($this->currentPlayers as $playerSteamId => $playerObj)
         {
-            sendEncodedMessage($em,$playerObj->websocketConnection);
+            sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
 
@@ -606,18 +596,16 @@ class GameController
         $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
 
         //Broadcast the new player joining to everyone else in the current Game.
-        $message = new JoinRoomNotification($playerName,$steamId);
-        $em = new EncapsulatedMessage("JoinRoomNotification",json_encode($message));
+        $message = buildNetworkMessage("JoinRoomNotification",new JoinRoomNotification($playerName,$steamId));
 
         //Send the message to the client first, then send it to everyone else.
         foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
         {
             if($steamId <> $playerSteamId)
             {
-                sendEncodedMessage($em,$playerObj->websocketConnection);
+                sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
-
     }
 
     public function kickPlayer($gameId,$playerToKick)
@@ -627,11 +615,8 @@ class GameController
         $nameToKick = $game->currentPlayers[$playerToKick]->username;
         $steamId = $game->currentPlayers[$playerToKick]->steamId;
 
-        $kickNotification = new KickNotification($nameToKick,$steamId);
-        $kickMessage = new KickMessage();
-
-        $kick =  new EncapsulatedMessage("Kicked", json_encode($kickMessage));
-        $kickNotif =  new EncapsulatedMessage("KickNotification", json_encode($kickNotification));
+        $kickNotifMessage = buildNetworkMessage("KickNotification",new KickNotification($nameToKick,$steamId));
+        $kickedMessage = buildNetworkMessage("Kicked",new KickMessage());
 
         if($game->gameHost == $playerToKick)
         {
@@ -644,12 +629,12 @@ class GameController
             if($playerObj->steamId == $playerToKick)
             {
                 //Remove the player from the game.
-                sendEncodedMessage($kick,$playerObj->websocketConnection);
+                sendEncodedMessage($kickedMessage,$playerObj->websocketConnection);
             }
             else
             {
                 //Notify all other players of the player being kicked.
-                sendEncodedMessage($kickNotif,$playerObj->websocketConnection);
+                sendEncodedMessage($kickNotifMessage,$playerObj->websocketConnection);
             }
         }
 
@@ -691,8 +676,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $run = new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset);
-            $em = new EncapsulatedMessage("RoomUpdate",json_encode($run));
+            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset));
 
             updateGameSettings($settings['roomId'],$newSettings);
 
@@ -700,7 +684,7 @@ class GameController
             {
                 if($playerSteamId != $gameToUpdate->gameHost)
                 {
-                    sendEncodedMessage($em,$playerObj->websocketConnection);
+                    sendEncodedMessage($message,$playerObj->websocketConnection);
                 }
             }
         }
@@ -748,15 +732,7 @@ class GameController
                 $gameToStart->playerVotePerms[$playerSteamId] = true;
 
                 //Send the game start signal to all players in the game
-                $startSignal = new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid);
-
-                try {
-                    $message = new EncapsulatedMessage("StartGame",json_encode($startSignal,JSON_THROW_ON_ERROR));
-                }
-                catch(Exception $e)
-                {
-                    logError($e->getMessage());
-                }
+                $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid));
 
                 sendEncodedMessage($message,$playerObj->websocketConnection);
             }
@@ -813,7 +789,7 @@ class GameController
             updateRoomJoinPermission($gameid,1);
         }
 
-        $em = new EncapsulatedMessage("DisconnectNotification",json_encode($dcNotification));
+        $message = buildNetworkMessage("DisconnectNotification",new DisconnectNotification());
 
         $indexToRemove = "";
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
@@ -828,7 +804,7 @@ class GameController
                 //Notify all other players of the player leaving the game.
                 if($playerObj->websocketConnection !== $leavingConnection)
                 {
-                    sendEncodedMessage($em,$playerObj->websocketConnection);
+                    sendEncodedMessage($message,$playerObj->websocketConnection);
                 }
             }
         }
@@ -846,14 +822,14 @@ class GameController
         $dcMessage->disconnectCode = 1001;
         $dcMessage->disconnectMessage = $disconnectReason;
 
-        $em = new EncapsulatedMessage("ServerDisconnection",json_encode($dcMessage));
+        $message = buildNetworkMessage("ServerDisconnection",new DisconnectSignal());
 
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
             //Don't send dc message to the host as they've already DC'd before we clean up the game.
             if($playerObj->websocketConnection !== $hostConnection)
             {
-                sendEncodedMessage($em,$playerObj->websocketConnection);
+                sendEncodedMessage($message,$playerObj->websocketConnection);
                 $playerObj->websocketConnection->close(1000,$disconnectReason);
             }
 
@@ -1000,9 +976,8 @@ class GameController
         $playerToHumil = $currentGame->currentPlayers[$steamId]->username;
         foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
             if ($playerSteamId != $steamId) {
-                $message = new HumiliationMessage($playerToHumil);
-                $em = new EncapsulatedMessage("CheatNotification",json_encode($message));
-                sendEncodedMessage($em,$playerObj->websocketConnection);
+                $message = buildNetworkMessage("CheatNotification",new HumiliationMessage($playerToHumil));
+                sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
     }
@@ -1012,9 +987,8 @@ class GameController
         $currentGame = $this->currentGames[$gameId];
         foreach($currentGame->currentPlayers as $playerSteamId => $playerObj) {
             if($playerObj->team == $team) {
-                $message = new MapPingNotification($row,$column);
-                $em = new EncapsulatedMessage("MapPing",json_encode($message));
-                sendEncodedMessage($em,$playerObj->websocketConnection);
+                $message = buildNetworkMessage("MapPing",new MapPingNotification($row,$column));
+                sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
     }

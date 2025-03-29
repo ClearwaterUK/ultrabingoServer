@@ -57,14 +57,13 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                 logWarn($associatedGame->currentPlayers[$newHost]->username." is now the new host for game ".$gameDetails[0]);
                 logWarn("Notifying all players in game");
 
-                $message = new NewHostNotification($username,$associatedGame->currentPlayers[$newHost]->username,$newHost);
-                $em = new EncapsulatedMessage("NewHostNotification",json_encode($message));
+                $message = buildNetworkMessage("NewHostNotification",new NewHostNotification($username,$associatedGame->currentPlayers[$newHost]->username,$newHost));
 
                 foreach($associatedGame->currentPlayers as $playerSteamId => $playerObj)
                 {
                     if($playerSteamId != $steamId)
                     {
-                        sendEncodedMessage($em,$playerObj->websocketConnection);
+                        sendEncodedMessage($message,$playerObj->websocketConnection);
                     }
                 }
             }
@@ -87,9 +86,8 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                 }
                 else
                 {
-                    $timeoutNotif = new TimeoutNotification($username,$steamId);
-                    $em = new EncapsulatedMessage("TimeoutNotification",json_encode($timeoutNotif));
-                    sendEncodedMessage($em,$playerObj->websocketConnection);
+                    $message = buildNetworkMessage("TimeoutNotification",new TimeoutNotification($username,$steamId));
+                    sendEncodedMessage($message,$playerObj->websocketConnection);
                 }
             }
             //unset($associatedGame->currentPlayers[$indexToUnset]);
@@ -143,9 +141,8 @@ function onMessageRecieved($message,$connection):void
                 {
                     logError("This SteamID or IP address is banned from the mod!");
                     $status = "ban";
-                    $crr = new CreateRoomResponse($status,-1);
-                    $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
-                    sendEncodedMessage($em,$connection);
+                    $message = buildNetworkMessage("CreateRoomResponse",new CreateRoomResponse($status,-1));
+                    sendEncodedMessage($message,$connection);
                     $connection->close();
                     return;
                 }
@@ -160,18 +157,17 @@ function onMessageRecieved($message,$connection):void
                     $status = "ok";
                     $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"],$receivedJson['rank']);
                     logMessage("Game created and set up with id ".$roomId." , password " . $roomPassword);
-                    $crr = new CreateRoomResponse($status,$roomId,$roomPassword,$game);
-                    $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
+
+                    $message = buildNetworkMessage("CreateRoomResponse", new CreateRoomResponse($status,$roomId,$roomPassword,$game));
                 }
                 else{
                     logError("Failed to create room!");
                     $status = "err";
-                    $crr = new CreateRoomResponse($status,$roomId);
-                    $em = new EncapsulatedMessage("CreateRoomResponse",json_encode($crr));
+                    $message = buildNetworkMessage("CreateRoomResponse",new CreateRoomResponse($status,-1));
                 }
 
                 //Send back the response to the client
-                sendEncodedMessage($em,$connection);
+                sendEncodedMessage($message,$connection);
                 break;
             }
 
@@ -188,23 +184,24 @@ function onMessageRecieved($message,$connection):void
                     if($canJoin == 0)
                     {
                         $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection,$receivedJson['rank']);
-                        $crr = new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]);
-                        $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
-                        sendEncodedMessage($em,$connection);
+
+                        $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]));
+
+                        sendEncodedMessage($message,$connection);
                     }
                     else
                     {
-                        $crr = new JoinRoomResponse($canJoin,-1,null);
-                        $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
-                        sendEncodedMessage($em,$connection);
+                        $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse($canJoin,-1,null));
+
+                        sendEncodedMessage($message,$connection);
                         $connection->close();
                     }
                 }
                 else
                 {
-                    $crr = new JoinRoomResponse(-1,-1,null);
-                    $em = new EncapsulatedMessage("JoinRoomResponse",json_encode($crr));
-                    sendEncodedMessage($em,$connection);
+                    $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse(-1,-1,null));
+
+                    sendEncodedMessage($message,$connection);
                     $connection->close();
                 }
                 break;
@@ -295,22 +292,20 @@ function onMessageRecieved($message,$connection):void
                             updateConnection($connection,$playerObj->steamId);
 
                             logMessage("Sending fresh game data to reconnected player");
-                            $message = new ReconnectResponse("OK",$game);
-                            $em = new EncapsulatedMessage("ReconnectResponse", json_encode($message));
-                            sendEncodedMessage($em, $connection);
+
+                            $message = buildNetworkMessage("ReconnectResponse",new ReconnectResponse("OK",$game));
+                            sendEncodedMessage($message, $connection);
                         }
                     }
                 }
                 else
                 {
                     logError("Game no longer exists in coordinator, sending error response");
-                    $message = new ReconnectResponse("END",$game);
-                    $em = new EncapsulatedMessage("ReconnectResponse", json_encode($message));
-                    sendEncodedMessage($em, $connection);
+                    $message = buildNetworkMessage("ReconnectResponse",new ReconnectResponse("END",$game));
+                    sendEncodedMessage($message, $connection);
                 }
-            }
-
                 break;
+            }
 
             case "SubmitRun":
             {
@@ -430,10 +425,8 @@ function onMessageRecieved($message,$connection):void
                 //Fetch the current message of the day.
                 $motd = file_get_contents(__DIR__."/../motd.txt");
 
-                $message = new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks);
-
-                $em = new EncapsulatedMessage("ModVerificationResponse",json_encode($message));
-                sendEncodedMessage($em,$connection);
+                $message = buildNetworkMessage("ModVerificationResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks));
+                sendEncodedMessage($message,$connection);
                 break;
             }
             case "FetchGames":
@@ -450,10 +443,8 @@ function onMessageRecieved($message,$connection):void
                     $status = "none";
                 }
 
-                $message = new FetchGamesResponse($status,json_encode($games));
-                $em = new EncapsulatedMessage("FetchGamesResponse",json_encode($message));
-
-                sendEncodedMessage($em,$connection);
+                $message = buildNetworkMessage("FetchGamesResponse",new FetchGamesResponse($status,json_encode($games)));
+                sendEncodedMessage($message,$connection);
 
                 break;
             }

@@ -495,6 +495,11 @@ function fetchAvailableRanks($steamId)
 
 }
 
+function buildNetworkMessage($header,$messageObj)
+{
+    return new EncapsulatedMessage($header,json_encode($messageObj));
+}
+
 function loadEnvFile($path):void
 {
     $dotenv = Dotenv\Dotenv::createImmutable($path);

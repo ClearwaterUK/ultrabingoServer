@@ -68,9 +68,8 @@ try {
         })
         ->onPing(function ($client, $connection, $message) {
             if ($client <> null && $connection <> null && $message <> null) {
-                $pong = new Pong();
-                $em = new EncapsulatedMessage("Pong", json_encode($pong));
-                sendEncodedMessage($em, $connection);
+                $message = buildNetworkMessage("Pong",new Pong());
+                sendEncodedMessage($message, $connection);
             }
         })
         ->onError(function ($server, $connection, $exception) {

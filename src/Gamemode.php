@@ -56,12 +56,11 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
         $levelDisplayName = $game->grid->levelTable[$recievedJson['row']."-".$recievedJson['column']]->levelName;
 
-        $claimBroadcast = new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted);
+        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
         foreach($game->currentPlayers as $playerSteamId => &$playerObj)
         {
-            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
             sendEncodedMessage($message,$playerObj->websocketConnection);
         }
 
@@ -134,10 +133,10 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
         markGameEnd($game->gameId);
 
-        $bingoSignal = new EndGameSignal($winningTeam,$winningPlayers,$elapsedTime,$claims,$game->firstMapClaimed,$game->lastMapClaimed,$game->bestStatValue,$game->bestStatMap,$endStatus,$tiedTeams);
+        $message = buildNetworkMessage("GameEnd", new EndGameSignal($winningTeam,$winningPlayers,$elapsedTime,$claims,$game->firstMapClaimed,$game->lastMapClaimed,$game->bestStatValue,$game->bestStatMap,$endStatus,$tiedTeams));
+
         foreach($game->currentPlayers as $playerSteamId => &$playerObj)
         {
-            $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
             sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
@@ -156,12 +155,11 @@ class BingoGamemode extends BaseGamemode implements IGameMode
 
         $levelDisplayName = $game->grid->levelTable[$recievedJson['row']."-".$recievedJson['column']]->levelName;
 
-        $claimBroadcast = new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted);
+        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
         foreach($game->currentPlayers as $playerSteamId => &$playerObj)
         {
-            $message = new EncapsulatedMessage("LevelClaimed",json_encode($claimBroadcast));
             sendEncodedMessage($message,$playerObj->websocketConnection);
         }
 
@@ -192,10 +190,10 @@ class BingoGamemode extends BaseGamemode implements IGameMode
 
         $claims = $gameToEnd->numOfClaims;
 
-        $bingoSignal = new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap);
+        $message = buildNetworkMessage("GameEnd",new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap));
+
         foreach($game->currentPlayers as $playerSteamId => &$playerObj)
         {
-            $message = new EncapsulatedMessage("GameEnd",json_encode($bingoSignal));
             sendEncodedMessage($message,$playerObj->websocketConnection);
         }
     }
