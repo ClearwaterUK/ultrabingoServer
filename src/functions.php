@@ -514,7 +514,7 @@ function broadcastToAllPlayers(Game $game,$message,callable $callback = null)
     }
 }
 
-function buildNetworkMessage($header,$message,$messageObj)
+function buildNetworkMessage($header,$messageObj)
 {
     return new EncapsulatedMessage($header,json_encode($messageObj));
 }
