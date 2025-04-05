@@ -772,7 +772,7 @@ class GameController
             updateRoomJoinPermission($gameid,1);
         }
 
-        $message = buildNetworkMessage("DisconnectNotification",new DisconnectNotification());
+        $message = buildNetworkMessage("DisconnectNotification",new DisconnectNotification($playername,$steamId));
 
         $indexToRemove = "";
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
