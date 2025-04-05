@@ -1,6 +1,7 @@
 use ultrabingo;
 
 -- Tester is ID°2
+truncate userRanks;
 
 -- 76561198128998723 - Clearwater
 insert ignore into userRanks(U_STEAMID, U_RANKID) values
