@@ -59,10 +59,7 @@ class DominationGamemode extends BaseGamemode implements IGameMode
         $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
-        foreach($game->currentPlayers as $playerSteamId => &$playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($game,$message);
 
         logInfo(intval($this->timeRemaining()). " seconds remaining");
     }
@@ -135,10 +132,8 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
         $message = buildNetworkMessage("GameEnd", new EndGameSignal($winningTeam,$winningPlayers,$elapsedTime,$claims,$game->firstMapClaimed,$game->lastMapClaimed,$game->bestStatValue,$game->bestStatMap,$endStatus,$tiedTeams));
 
-        foreach($game->currentPlayers as $playerSteamId => &$playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($game,$message);
+
     }
 }
 
@@ -158,10 +153,7 @@ class BingoGamemode extends BaseGamemode implements IGameMode
         $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
-        foreach($game->currentPlayers as $playerSteamId => &$playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($game,$message);
 
         if($hasObtainedBingo)
         {
@@ -192,10 +184,7 @@ class BingoGamemode extends BaseGamemode implements IGameMode
 
         $message = buildNetworkMessage("GameEnd",new EndGameSignal($receivedJson['team'],$winningPlayers,$elapsedTime,$claims,$gameToEnd->firstMapClaimed,$gameToEnd->lastMapClaimed,$gameToEnd->bestStatValue,$gameToEnd->bestStatMap));
 
-        foreach($game->currentPlayers as $playerSteamId => &$playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($game,$message);
     }
 }
 

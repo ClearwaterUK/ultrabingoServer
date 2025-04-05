@@ -288,10 +288,7 @@ class Game
 
         //Broadcast the changed level to all connected players.
         $message = buildNetworkMessage("RerollSuccess",new RerollSuccessNotification($oldMapId,$oldMapName,$newLevel,$x,$y));
-        foreach($this->currentPlayers as $playerSteamId => $playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($this,$message);
     }
 
     public function handleVoteEnd()
@@ -313,10 +310,7 @@ class Game
             logMessage("VOTE FAILED");
 
             $message = buildNetworkMessage("RerollExpire",new RerollExpireNotification($this->grid->levelTable[$this->votePosition]->levelName));
-            foreach($this->currentPlayers as $playerSteamId => $playerObj)
-            {
-                sendEncodedMessage($message,$playerObj->websocketConnection);
-            }
+            broadcastToAllPlayers($this,$message);
         }
 
         $this->resetVoteVariables();
@@ -328,10 +322,7 @@ class Game
         array_push($this->playersAlreadyVoted,$steamId);
 
         $message = buildNetworkMessage("RerollVote", new RerollVoteNotification($steamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$steamId]->username,$this->currentVotes,$this->voteThreshold,0,1));
-        foreach($this->currentPlayers as $playerSteamId => $playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($this,$message);
     }
 
     public function canPlayerStartVote($steamId)
@@ -367,11 +358,7 @@ class Game
 
         //Notify players that vote has started
         $message = buildNetworkMessage("RerollVote",new RerollVoteNotification($playerSteamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$playerSteamId]->username,$this->currentVotes,$this->voteThreshold,$VOTE_TIMER,0));
-
-        foreach($this->currentPlayers as $playerSteamId => $playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($this,$message);
 
         logWarn("Timer set");
     }
@@ -418,11 +405,7 @@ class Game
         updateRoomJoinPermission($this->gameId,0);
 
         $message = buildNetworkMessage("UpdateTeamsNotif",new UpdateTeams(0));
-
-        foreach($this->currentPlayers as $playerSteamId => $playerObj)
-        {
-            sendEncodedMessage($message,$playerObj->websocketConnection);
-        }
+        broadcastToAllPlayers($this,$message);
     }
 
     public function clearTeams():void

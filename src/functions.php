@@ -495,7 +495,26 @@ function fetchAvailableRanks($steamId)
 
 }
 
-function buildNetworkMessage($header,$messageObj)
+function broadcastToAllPlayers(Game $game,$message,callable $callback = null)
+{
+    foreach($game->currentPlayers as $playerSteamId => &$playerObj)
+    {
+        if($callback == null)
+        {
+            sendEncodedMessage($message,$playerObj->websocketConnection);
+        }
+        else
+        {
+            if($callback)
+            {
+                sendEncodedMessage($message,$playerObj->websocketConnection);
+            }
+        }
+
+    }
+}
+
+function buildNetworkMessage($header,$message,$messageObj)
 {
     return new EncapsulatedMessage($header,json_encode($messageObj));
 }
