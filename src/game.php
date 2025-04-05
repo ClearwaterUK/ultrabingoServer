@@ -761,10 +761,6 @@ class GameController
         $dcMessage->disconnectCode = 1001;
         $dcMessage->disconnectMessage = "You have left the game.";
 
-        $dcNotification = new DisconnectNotification();
-        $dcNotification->username = $playername;
-        $dcNotification->steamId = $steamId;
-
         if($game->gameSettings->hasManuallySetTeams)
         {
             $game->gameSettings->hasManuallySetTeams = false;
