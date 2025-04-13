@@ -369,6 +369,17 @@ function clearTables()
     }
 }
 
+function updatePlayerCount($gameId, $increment=1)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("UPDATE currentGames SET R_CURRENTPLAYERS = R_CURRENTPLAYERS + ? WHERE R_ID = ?");
+    $request->bindParam(1,$increment,PDO::PARAM_INT);
+    $request->bindParam(2,$gameId,PDO::PARAM_INT);
+
+    $request->execute();
+}
+
 //Borrowed from SO: https://stackoverflow.com/questions/61481567/remove-emojis-from-string
 function sanitiseUsername($inputUsername)
 {

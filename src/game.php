@@ -375,6 +375,8 @@ class Game
         {
             $this->gameHost = $playerSteamId;
         }
+
+        updatePlayerCount($this->gameId);
     }
 
     //Removes a player from the specified game.
@@ -382,6 +384,7 @@ class Game
     public function removePlayerFromGame($playerSteamId):void
     {
         unset($this->currentPlayers[$playerSteamId]);
+
     }
 
     public function putPlayerInTeam($player,$teamColor):void
@@ -789,7 +792,8 @@ class GameController
         }
 
         //Unregister the connection from the DB.
-        unregisterConnection($dcNotification->steamId);
+        unregisterConnection($steamId);
+        updatePlayerCount($gameid,-1);
 
         unset($game->currentPlayers[$indexToRemove]);
     }
