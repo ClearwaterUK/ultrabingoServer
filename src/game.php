@@ -34,7 +34,6 @@ class GameLevel
     public $claimedBy; //The team that currently claims the level. Can be any color or "None to signify not claimed yet.
     public string $personToBeat;
     public float $timeToBeat;
-    public float $styleToBeat;
 
     //Coordinates in the GameGrid.
     public int $row;
@@ -53,7 +52,6 @@ class GameLevel
         $this->claimedBy = Team::NONE;
         $this->personToBeat = "";
         $this->timeToBeat = 0;
-        $this->styleToBeat = 0;
 
         $this->row = $row;
         $this->column = $column;
@@ -136,9 +134,9 @@ class GameSettings
 {
     public int $maxPlayers;
     public int $maxTeams;
+    public int $timeLimit;
     public int $teamComposition;
     public int $gamemode;
-    public int $gameType;
     public int $difficulty;
     public int $gridSize;
     public bool $requiresPRank;
@@ -159,17 +157,17 @@ class GameSettings
 
         $this->maxPlayers = 8;
         $this->maxTeams = 4;
+        $this->timeLimit = 5;                   //Time limit - 5 mins by default
         $this->teamComposition = 0;             //Randomised teams by default
         $this->gridSize = 0;                    //3x3 by default
         $this->gamemode = 0;                    //Normal bingo by default
-        $this->gameType = 0;                    //Time by default
         $this->difficulty = 2;                  //Standard by default
         $this->requiresPRank = false;           //P-Rank not requried by default
         $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
 
-        $this->dominationTimer = $DOMINATION_TIME_MINUTES;
+        $this->dominationTimer = $this->timeLimit;
     }
 }
 
@@ -428,12 +426,7 @@ class Game
 
     public function updateBestStatValue($statValue,$statMapName)
     {
-        if($this->gameSettings->gameType == 0 && (($this->bestStatValue > 0 && $statValue < $this->bestStatValue) || $statValue < $this->bestStatValue))
-        {
-            $this->bestStatValue = $statValue;
-            $this->bestStatMap = $statMapName;
-        }
-        else if ($this->gameSettings->gameType == 1 && $statValue > $this->bestStatValue)
+        if($statValue < $this->bestStatValue)
         {
             $this->bestStatValue = $statValue;
             $this->bestStatMap = $statMapName;
@@ -641,8 +634,8 @@ class GameController
             $newSettings->maxPlayers = $settings['maxPlayers'];
             $newSettings->maxTeams = $settings['maxTeams'];
             $newSettings->teamComposition = $settings['teamComposition'];
+            $newSettings->timeLimit = $settings['timeLimit'];
             $newSettings->gamemode = $settings['gamemode'];
-            $newSettings->gameType = $settings['gameType'];
             $newSettings->difficulty = $settings['difficulty'];
             $newSettings->gridSize = $settings['gridSize'];
             $newSettings->requiresPRank = $settings['PRankRequired'];
@@ -662,7 +655,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['gameType'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset));
+            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['timeLimit'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset));
 
             updateGameSettings($settings['roomId'],$newSettings);
 
@@ -898,7 +891,6 @@ class GameController
             $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
             $levelInCard->personToBeat = $submissionData['playerName'];
             $levelInCard->timeToBeat = $submissionData['time'];
-            $levelInCard->styleToBeat = $submissionData['style'];
 
             $currentGame->numOfClaims++;
             if(!$this->isFirstMapClaimed($currentGame))
@@ -908,13 +900,13 @@ class GameController
 
             $currentGame->lastMapClaimed = $levelInCard->levelName;
 
-            $currentGame->updateBestStatValue(($currentGame->gameSettings->gameType == 0 ? $submissionData['time'] : $submissionData['style']),$levelInCard->levelName);
+            $currentGame->updateBestStatValue($submissionData['time'],$levelInCard->levelName);
 
             return 0;
         }
         else
         {
-            if(($currentGame->gameSettings->gameType == 0 && $submissionData['time'] < $levelInCard->timeToBeat) || ($currentGame->gameSettings->gameType == 1 && $submissionData['style'] > $levelInCard->styleToBeat))
+            if(($submissionData['time'] < $levelInCard->timeToBeat))
             {
                 //Same team/person
                 if($levelInCard->claimedBy == Team::tryFrom($submissionData['team']))
@@ -922,12 +914,9 @@ class GameController
                     logInfo("Level already claimed by player/team, improving");
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
-                    $levelInCard->styleToBeat = $submissionData['style'];
 
                     $currentGame->numOfClaims++;
                     $currentGame->lastMapClaimed = $levelInCard->levelName;
-
-
 
                     return 1;
                 }
@@ -937,7 +926,6 @@ class GameController
                     $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
                     $levelInCard->personToBeat = $submissionData['playerName'];
                     $levelInCard->timeToBeat = $submissionData['time'];
-                    $levelInCard->styleToBeat = $submissionData['style'];
 
                     $currentGame->numOfClaims++;
                     $currentGame->lastMapClaimed = $levelInCard->levelName;

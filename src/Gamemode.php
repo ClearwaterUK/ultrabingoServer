@@ -40,14 +40,12 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
     public function setup(Game $game):void
     {
-        global $DOMINATION_TIME_MINUTES;
-
         logInfo("Setting up Domination gamemode");
 
-        $this->time = new EvTimer($DOMINATION_TIME_MINUTES*60, 0, function() use ($game) {
+        $this->time = new EvTimer($game->gameSettings->timeLimit*60, 0, function() use ($game) {
             $this->timeUp($game);
         });
-        logInfo("Timer started at ".$DOMINATION_TIME_MINUTES
+        logInfo("Timer started at ".$game->gameSettings->timeLimit
             ."minutes");
     }
     public function onMapClaim(Game $game,$recievedJson,$submitResult,$mapIsBeingVoted):void
@@ -56,7 +54,7 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
         $levelDisplayName = $game->grid->levelTable[$recievedJson['row']."-".$recievedJson['column']]->levelName;
 
-        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
+        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
         broadcastToAllPlayers($game,$message);
@@ -150,7 +148,7 @@ class BingoGamemode extends BaseGamemode implements IGameMode
 
         $levelDisplayName = $game->grid->levelTable[$recievedJson['row']."-".$recievedJson['column']]->levelName;
 
-        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$recievedJson['style'],$mapIsBeingVoted));
+        $message = buildNetworkMessage("LevelClaimed",new ClaimedLevelBroadcast($recievedJson['playerName'],$recievedJson['team'],$levelDisplayName,$submitResult,$recievedJson['row'],$recievedJson['column'],$recievedJson['time'],$mapIsBeingVoted));
 
         logMessage("Notifying all players in game");
         broadcastToAllPlayers($game,$message);

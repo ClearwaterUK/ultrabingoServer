@@ -12,11 +12,10 @@ class ClaimedLevelBroadcast
     public $column;
 
     public $newTimeRequirement;
-    public $newStyleRequirement;
 
     public $isMapVoted;
 
-    public function __construct($username,$team,$levelname,$claimType,$row,$column,$time,$style,$isMapVoted)
+    public function __construct($username,$team,$levelname,$claimType,$row,$column,$time,$isMapVoted)
     {
         $this->username = $username;
         $this->team = $team;
@@ -27,8 +26,6 @@ class ClaimedLevelBroadcast
         $this->column = $column;
 
         $this->newTimeRequirement = $time;
-        $this->newStyleRequirement = $style;
-
         $this->isMapVoted = $isMapVoted;
     }
 }

@@ -15,7 +15,7 @@ class RoomDataDB
     public $roomPassword;
     public $roomHostedBy;
 
-    public $gameType;
+    public $gamemode;
     public $roomMaxPlayers;
     public $pRankRequired;
 
@@ -25,7 +25,7 @@ class RoomDataDB
         $this->roomPassword = $data["roomPassword"];
         $this->roomHostedBy = $data["hostSteamName"];
         $this->roomMaxPlayers = intval($data["maxPlayers"]);
-        $this->gameType = $data["gameType"];
+        $this->gamemode = $data["gamemode"];
         $this->pRankRequired = $data["pRankRequired"];
     }
 }
@@ -38,7 +38,7 @@ function createRoomInDatabase($roomData)
     logWarn($roomPassword);
 
     try {
-        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_GAMEMODE,R_JOINABLE,R_GRIDSIZE,R_GAMETYPE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT,R_HASENDED) VALUES (?,?,0,0,8,4,0,0,1,0,0,2,0,0,0)');
+        $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_GAMEMODE,R_JOINABLE,R_GRIDSIZE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT,R_HASENDED) VALUES (?,?,0,0,8,4,0,0,1,0,2,0,0,0)');
         $request->bindParam(1,$roomData['hostSteamId'],PDO::PARAM_STR);
         $request->bindParam(2,$roomPassword,PDO::PARAM_STR);
         $request->execute();
@@ -207,7 +207,6 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_TEAMCOMPOSITION = ?,
     R_GRIDSIZE = ?,
     R_GAMEMODE = ?,
-    R_GAMETYPE = ?,
     R_DIFFICULTY = ?,
     R_PRANKREQUIRED = ?,
     R_DISABLECAMPAIGNALTEXIT = ?,
@@ -219,12 +218,11 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(3,$newSettings->teamComposition,PDO::PARAM_INT);
     $request->bindParam(4,$newSettings->gridSize,PDO::PARAM_INT);
     $request->bindParam(5,$newSettings->gamemode,PDO::PARAM_INT);
-    $request->bindParam(6,$newSettings->gameType,PDO::PARAM_INT);
-    $request->bindParam(7,$newSettings->difficulty,PDO::PARAM_INT);
-    $request->bindParam(8,$newSettings->requiresPRank,PDO::PARAM_BOOL);
-    $request->bindParam(9,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
-    $request->bindParam(10,$newSettings->gameVisibility,PDO::PARAM_INT);
-    $request->bindParam(11,$roomId,PDO::PARAM_INT);
+    $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
+    $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
+    $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
+    $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
+    $request->bindParam(10,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 
