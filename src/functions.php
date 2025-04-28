@@ -67,6 +67,7 @@ function verifyModList($modList,$steamId)
             "IntroSkip",
             "PluginConfigurator",
             "StyleEditor",
+            "StyleToasts",
             "UnityExplorer",
             "USTManager"];
 
