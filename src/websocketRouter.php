@@ -23,9 +23,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 {
     global $gameCoordinator;
 
-    logError("Unclean disconnect from client - lost connection or alt-f4'd?" );
-    logError($exception->getMessage() . " (".$exception->getCode().")");
-
+    logWarn("Unclean disconnect from client: ".$exception->getMessage() . " (".$exception->getCode().")");
     $connectionHash = md5(strval($connection));
 
     //Remove the dropped connection from the game that it was in.
@@ -37,15 +35,14 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         $username = $gameDetails[1];
         $steamId = $gameDetails[2];
 
-        LogWarn("Player who timed out:".$username);
+        logWarn("Player who timed out:".$username);
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
         if($associatedGame->gameHost == $steamId)
         {
-            logWarn("Client who dropped was the host of game ".$gameDetails[0]);
+            logInfo("Client who dropped was the host of game ".$gameDetails[0]);
             if(checkPlayerCountOfGame($gameDetails[0]) > 0)
             {
-                logWarn("Picking a random other player as host");
                 $list = array_filter(array_keys($associatedGame->currentPlayers),function($elem) use($steamId){
                     return $elem != $steamId;
                 });
@@ -54,8 +51,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
                 $associatedGame->gameHost = $newHost;
                 updateHostForGame($gameDetails[0],$newHost);
 
-                logWarn($associatedGame->currentPlayers[$newHost]->username." is now the new host for game ".$gameDetails[0]);
-                logWarn("Notifying all players in game");
+                logInfo($associatedGame->currentPlayers[$newHost]->username." is now the new host for game ".$gameDetails[0]);
 
                 $message = buildNetworkMessage("NewHostNotification",new NewHostNotification($username,$associatedGame->currentPlayers[$newHost]->username,$newHost));
 
@@ -69,7 +65,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             else
             {
-                logWarn("No other players in game - destroying game!");
+                logInfo("No other players in game - destroying game");
                 $gameCoordinator->disconnectAllPlayers($gameDetails[0],$connection,"HOSTDROPPED");
                 $gameCoordinator->destroyGame($gameDetails[0]);
                 removeGame($gameDetails[0]);
@@ -99,7 +95,7 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
 
 function enumerateServerConnections($server):void
 {
-    logWarn($server->getConnectionCount() . " active connections");
+    logInfo($server->getConnectionCount() . " active connections");
 }
 
 function onClientConnect($server):void
@@ -139,7 +135,7 @@ function onMessageRecieved($message,$connection):void
                 //Make sure the steamID or the IP isn't banned
                 if(checkBan($receivedJson["hostSteamId"],explode(":",$connection->getRemoteName())[0]))
                 {
-                    logError("This SteamID or IP address is banned from the mod!");
+                    logWarn("SteamID ".$receivedJson["hostSteamId"]." or IP address is banned from the mod!");
                     $status = "ban";
                     $message = buildNetworkMessage("CreateRoomResponse",new CreateRoomResponse($status,-1));
                     sendEncodedMessage($message,$connection);
@@ -147,7 +143,7 @@ function onMessageRecieved($message,$connection):void
                     return;
                 }
 
-                logWarn("Creating new game in DB");
+                logInfo("Creating new game in DB");
                 $roomData = createRoomInDatabase($receivedJson);
                 $roomId = intval($roomData[0]);
                 $roomPassword = $roomData[1];
@@ -156,7 +152,7 @@ function onMessageRecieved($message,$connection):void
                     //Create the room
                     $status = "ok";
                     $game = $gameCoordinator->createGame($roomId,$receivedJson["hostSteamName"],$connection,$receivedJson["hostSteamId"],$receivedJson['rank']);
-                    logMessage("Game created and set up with id ".$roomId." , password " . $roomPassword);
+                    logInfo("Game created and set up with id ".$roomId." , password " . $roomPassword);
 
                     $message = buildNetworkMessage("CreateRoomResponse", new CreateRoomResponse($status,$roomId,$roomPassword,$game));
                 }
@@ -173,7 +169,7 @@ function onMessageRecieved($message,$connection):void
 
             case "JoinRoom":
             {
-                logMessage($receivedJson['username']." wants to join game with password".$receivedJson['password']);
+                logMessage($receivedJson['username']." attempting to join game with password".$receivedJson['password']);
 
                 //Start by checking if game exists.
                 $game = lookForGame($receivedJson['password']);
@@ -209,7 +205,6 @@ function onMessageRecieved($message,$connection):void
 
             case "UpdateRoomSettings":
             {
-                logWarn("Updating room settings");
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
                     logMessage("Updating settings for room ".$receivedJson['roomId']);
@@ -222,7 +217,7 @@ function onMessageRecieved($message,$connection):void
             {
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
-                    logWarn("Starting game ".$receivedJson['roomId']);
+                    logMessage("Starting game ".$receivedJson['roomId']);
                     $gameCoordinator->startGame($receivedJson['roomId']);
                 }
                 break;
@@ -232,7 +227,7 @@ function onMessageRecieved($message,$connection):void
             {
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
-                    logWarn("Kicking player ". $receivedJson['playerToKick']." from game ".$receivedJson['gameId']);
+                    logInfo("Player ". $receivedJson['playerToKick']." was kicked from game ".$receivedJson['gameId']);
                     $gameCoordinator->kickPlayer($receivedJson['gameId'],$receivedJson['playerToKick']);
                 }
             }
@@ -311,8 +306,6 @@ function onMessageRecieved($message,$connection):void
             {
                 $gameId = $receivedJson['gameId'];
 
-                logMessage("Player is submitting run in game ".$receivedJson['gameId']);
-
                 if(!verifyConnection($receivedJson['ticket']))
                 {
                     logWarn("Invalid Steam ticket or player is not in game, rejecting submission");
@@ -332,17 +325,13 @@ function onMessageRecieved($message,$connection):void
                         $mapIsBeingVoted = $game->votePosition == $pos;
                         if($mapIsBeingVoted)
                         {
-                            logWarn("CLAIMED MAP IS BEING VOTED ON, CANCELLING VOTE");
+                            logMessage("Claimed map is being voted on, cancelling vote");
                             $game->resetVoteVariables();
                         }
 
                         //Call onMapClaim to see if the map claim causes the game to end or not.
                         $gameCoordinator->currentGames[$gameId]->gamemode->onMapClaim($gameCoordinator->currentGames[$gameId],$receivedJson,$submitResult,$mapIsBeingVoted);
                     }
-                }
-                else
-                {
-                    logWarn("Run submission was invalid - rejecting");
                 }
                 break;
             }
@@ -405,7 +394,6 @@ function onMessageRecieved($message,$connection):void
             }
             case "RegisterTicket":
             {
-                logWarn("Registering new connection");
                 registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
                 break;
             }
@@ -431,7 +419,6 @@ function onMessageRecieved($message,$connection):void
             }
             case "FetchGames":
             {
-                logWarn("Fetching games");
                 $games = getPublicBingoGames();
                 $status = "";
                 if(count($games) > 0)
@@ -476,10 +463,6 @@ function onMessageRecieved($message,$connection):void
                             if($game->canPlayerStartVote($receivedJson['steamId']))
                             {
                                 $game->startRerollVote($receivedJson['steamId'],$receivedJson['column'],$receivedJson['row']);
-                            }
-                            else
-                            {
-                                logWarn("Player can't start vote, or has already used their start vote!");
                             }
                         }
                     }

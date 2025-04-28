@@ -35,7 +35,6 @@ function createRoomInDatabase($roomData)
     global $dbc;
 
     $roomPassword = bin2hex(random_bytes(3));
-    logWarn($roomPassword);
 
     try {
         $request = $dbc->prepare('INSERT INTO currentGames(R_HOSTEDBY,R_PASSWORD,R_CURRENTPLAYERS,R_HASSTARTED,R_MAXPLAYERS,R_MAXTEAMS,R_TEAMCOMPOSITION,R_GAMEMODE,R_JOINABLE,R_GRIDSIZE,R_DIFFICULTY,R_PRANKREQUIRED,R_DISABLECAMPAIGNALTEXIT,R_HASENDED) VALUES (?,?,0,0,8,4,0,0,1,0,2,0,0,0)');
@@ -71,7 +70,6 @@ function verifyModList($modList,$steamId)
             "UnityExplorer",
             "USTManager"];
 
-    logMessage($steamId);
     foreach($modList as $mod)
     {
         if($mod == "UnityExplorer" && !($steamId == "76561198128998723"))
@@ -85,7 +83,7 @@ function verifyModList($modList,$steamId)
             return false;
         }
     }
-    logMessage("Mod list check ok");
+    logMessage("Mod list check of ".$steamId." ok");
     return true;
 }
 
@@ -115,13 +113,13 @@ function checkJoinEligibility($game,$steamId,$ip)
 
     // Make sure the steamID wasn't already kicked from the game
     if(checkKick($game['R_ID'],$steamId)) {
-        logError("This SteamID was kicked from this game!");
+        logWarn("This SteamID was kicked from this game!");
         return -6;
     }
 
     if(checkBan($steamId,$ip))
     {
-        logError("This SteamID or IP address is banned from the mod!");
+        logWarn("This SteamID or IP address is banned");
         return -5;
     }
 
@@ -265,7 +263,6 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
 {
     global $dbc;
 
-    logWarn("Performing register in DB");
     $connectionHash = md5(strval($connection));
     $ticketHash = password_hash($steamTicket,PASSWORD_BCRYPT);
     $steamUsername = sanitiseUsername($steamUsername);
@@ -287,7 +284,6 @@ function registerConnection($connection,$steamTicket,$steamId,$steamUsername,$ro
     $request->bindParam(6,$isHost,PDO::PARAM_BOOL);
 
     $request->execute();
-    logWarn("Register completed");
 }
 
 function updateConnection($connection,$steamId)
@@ -306,12 +302,10 @@ function updateConnection($connection,$steamId)
 
 function verifyConnection($steamTicket,$checkHost=false)
 {
-    logWarn("Verifying connection");
     global $dbc;
     $ticketRequest = $dbc->prepare("SELECT C_TICKET, C_STEAMID, C_ROOMID, C_ISHOST from activeConnections WHERE C_STEAMID = ? AND C_ROOMID = ?");
     $ticketRequest->bindParam(1,$steamTicket['steamId'],PDO::PARAM_STR);
     $ticketRequest->bindParam(2,$steamTicket['gameId']);
-    $ticketRequest->debugDumpParams();
     $ticketRequest->execute();
     $res = $ticketRequest->fetch();
     if($res && count($res) > 0)
@@ -324,16 +318,12 @@ function verifyConnection($steamTicket,$checkHost=false)
         $hostMatch = ($checkHost ? ($res[3] == 1) : true);
 
         $check = $ticketMatch && $gameMatch && $hostMatch;
-        if($check)
-        {
-            logInfo("Connection valid");
-            return true;
-        }
+        if($check) {return true;}
         else
         {
             logError("Connection invalid!");
-            logWarn("Steam ticket match: ".$ticketMatch);
-            logWarn("Game match: ".$gameMatch);
+            logError("Steam ticket match: ".$ticketMatch);
+            logError("Game match: ".$gameMatch);
             if($checkHost){logWarn("Host match: ".$hostMatch);}
             return false;
         }
@@ -381,7 +371,6 @@ function updatePlayerCount($gameId, $increment=1)
 //Borrowed from SO: https://stackoverflow.com/questions/61481567/remove-emojis-from-string
 function sanitiseUsername($inputUsername)
 {
-    logWarn("Sanitising username");
     $sanitisedUsername = "";
     // Match Emoticons
     $regexEmoticons = '/[\x{1F600}-\x{1F64F}]/u';
@@ -399,7 +388,6 @@ function sanitiseUsername($inputUsername)
     $regexTransport = '/[\x{1F1E0}-\x{1F1FF}]/u';
     $sanitisedUsername = preg_replace($regexTransport, '', $sanitisedUsername);
 
-    logWarn("Sanitising done");
     return $sanitisedUsername;
 
 }
@@ -429,7 +417,6 @@ function clearKicks($roomId)
 function checkBan($steamId,$ipAddress):bool
 {
     global $dbc;
-    logWarn("Checking ban for steamID ".$steamId. "(".$ipAddress.")");
 
     $request = $dbc->prepare("SELECT B_STEAMID, B_IP FROM bannedPlayers WHERE B_STEAMID = ? OR B_IP = ?");
     $request->bindParam(1,$steamId,PDO::PARAM_STR);

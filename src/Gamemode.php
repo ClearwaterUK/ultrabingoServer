@@ -58,12 +58,10 @@ class DominationGamemode extends BaseGamemode implements IGameMode
 
         logMessage("Notifying all players in game");
         broadcastToAllPlayers($game,$message);
-
-        logInfo(intval($this->timeRemaining()). " seconds remaining");
     }
     public function timeUp(Game $game):void
     {
-        logWarn("TIME UP");
+        logMessage("TIME UP!");
 
         $this->endGame($game);
     }
@@ -93,7 +91,6 @@ class DominationGamemode extends BaseGamemode implements IGameMode
         $tiedTeams = array();
 
         //If no claims were made in the game, no winner.
-        var_export($claims);
         if($claims == 0)
         {
             logWarn("No claims were made during this game!");
@@ -105,23 +102,20 @@ class DominationGamemode extends BaseGamemode implements IGameMode
         //Get the max value from $tracker, then check if count(array_keys($tracker)) > 1
         else if (array_count_values($tracker)[max($tracker)] > 1)
         {
-            logWarn("TIE");
+            logMessage("TIE");
             $maxVal = max($tracker);
             $tiedTeams = array_keys($tracker,$maxVal);
-
-            logWarn("Tied teams: ");
-            var_export($tiedTeams);
 
             $endStatus = 2;
             $winningPlayers = array();
         }
         else
         {
-            logWarn("Winning team: ".$winningTeam);
+            logMessage("Winning team: ".$winningTeam);
             $winningPlayers = array_values($game->teams[$winningTeam]);
         }
         $endTime = new DateTime();
-        logWarn("Ending game ".$game->gameId." at ".$endTime->format("Y-m-d h:i:s A"));
+        logMessage("Ending game ".$game->gameId." at ".$endTime->format("Y-m-d h:i:s A"));
 
         $elapsedTime = $game->startTime->diff($endTime)->format(("%H:%I:%S"));
         logMessage("Elapsed time of game: ".$elapsedTime);
@@ -171,7 +165,7 @@ class BingoGamemode extends BaseGamemode implements IGameMode
         $winningPlayers = array_values($gameToEnd->teams[$receivedJson['team']]);
 
         $endTime = new DateTime();
-        logWarn("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A"));
+        logMessage("Ending game ".$gameId." at ".$endTime->format("Y-m-d h:i:s A"));
 
         $elapsedTime = $gameToEnd->startTime->diff($endTime)->format(("%H:%I:%S"));
         logMessage("Elapsed time of game: ".$elapsedTime);

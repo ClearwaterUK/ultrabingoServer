@@ -43,8 +43,6 @@ require_once (__DIR__.'/src/Gamemode.php');
 logInfo("Setting up WebSocket router");
 require_once (__DIR__.'/src/websocketRouter.php');
 
-
-
 logMessage("Starting webserver on port ".$PORT);
 $server = new WebSocket\Server($PORT,false);
 try {

@@ -300,13 +300,10 @@ class Game
 
         if($this->currentVotes >= $this->voteThreshold)
         {
-            logMessage("VOTE SUCCESSFUL, REROLLING MAP");
             $this->rerollMap($this->votePosition[0],$this->votePosition[2]);
         }
         else
         {
-            logMessage("VOTE FAILED");
-
             $message = buildNetworkMessage("RerollExpire",new RerollExpireNotification($this->grid->levelTable[$this->votePosition]->levelName));
             broadcastToAllPlayers($this,$message);
         }
@@ -341,7 +338,6 @@ class Game
         $test = new EvTimer($VOTE_TIMER-1,0,function()
         {
             if($this->isVoteOngoing) {
-                logWarn("Reroll vote timer for gameId ".$this->gameId. " has expired, handling");
                 $this->handleVoteEnd();
             }
 
@@ -357,8 +353,6 @@ class Game
         //Notify players that vote has started
         $message = buildNetworkMessage("RerollVote",new RerollVoteNotification($playerSteamId,$this->grid->levelTable[$this->votePosition]->levelName,$this->currentPlayers[$playerSteamId]->username,$this->currentVotes,$this->voteThreshold,$VOTE_TIMER,0));
         broadcastToAllPlayers($this,$message);
-
-        logWarn("Timer set");
     }
 
     //Adds a player to the current Game.
@@ -486,10 +480,6 @@ class Game
             $helper++;
         }
 
-        if($horizontal || $vertical || $diagonalDown || $diagonalUp)
-        {
-            logWarn("BINGO!");
-        }
         return($horizontal || $vertical || $diagonalUp || $diagonalDown);
     }
 
@@ -513,8 +503,6 @@ class Game
         }
 
         logMessage("Set preset teams for game ".$this->gameId.":");
-        var_export($this->teams);
-
     }
 
     //Split all Players connected to the Game into teams when the Game is started.
@@ -561,7 +549,7 @@ class GameController
 
     public function createGame(Int $gameId, string $hostSteamName,WebSocket\Connection $hostConnection, string $hostSteamId, string $rank)
     {
-        logInfo("Creating game with id ".$gameId.", host is ".$hostSteamName.", SteamID is ".$hostSteamId);
+        logInfo("Creating game with id ".$gameId.", host is ".$hostSteamName."(".$hostSteamId.")");
         $gameToCreate = new Game($hostSteamName,$hostConnection,$gameId,$hostSteamId,$rank);
         $this->currentGames[$gameId] = $gameToCreate;
 
@@ -698,13 +686,12 @@ class GameController
 
             //Mark the start time
             $gameToStart->startTime = new DateTime();
-            logInfo("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A"));
+            logMessage("Game ".$gameToStart->gameId. " starting at " . $gameToStart->startTime->format("Y-m-d h:i:s A"));
 
             //Set minimum reroll vote treshold
             $gameToStart->voteThreshold = ceil(count($gameToStart->currentPlayers)*0.66);
             logInfo("Minimum votes for map reroll is ".$gameToStart->voteThreshold);
 
-            logInfo("Telling all players of game ".$gameToStart->gameId . " to start");
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
                 //Initialise vote status for all players
@@ -731,7 +718,7 @@ class GameController
                 if ($playerSteamId == $steamId) {
                     if($playerSteamId == $currentGame->gameHost)
                     {
-                        logWarn("Player to remove is the host, deleting the whole game!");
+                        logInfo("Player to remove is the host, deleting the whole game!");
                         return 1;
                     }
                     else
@@ -740,12 +727,12 @@ class GameController
                     }
                 }
             }
-            logError("Could not find the player to remove in specified game");
+            logWarn("Could not find the player to remove in specified game");
             return -1;
         }
         else
         {
-            logError("Could not find the specified game");
+            logWarn("Could not find the specified game");
             return -2;
         }
     }
@@ -818,14 +805,14 @@ class GameController
 
     public function destroyGame(Int $gameId):void
     {
-        logWarn("Destroying game id ".$gameId . " from game coordinator");
+        logInfo("Destroying game id ".$gameId . " from game coordinator");
         $this->currentGames[$gameId]->hasEnded = true;
         unset($this->currentGames[$gameId]);
 
-        logWarn("Clearing kicks");
+        logInfo("Clearing kicks");
         clearKicks($gameId);
 
-        logWarn("Removing entry from DB");
+        logInfo("Removing entry from DB");
         removeGame($gameId);
     }
 
@@ -839,14 +826,12 @@ class GameController
             $currentGame = $this->currentGames[$gameId];
             $submittedCoords = $submissionData['row']."-".$submissionData['column'];
 
-            logInfo("Player is submitting at position ".$submittedCoords." which in our current card, level ID is ".$currentGame->grid->levelTable[$submittedCoords]->levelId);
+            logInfo("Player submitting at pos ".$submittedCoords." level ID in server cell is ".$currentGame->grid->levelTable[$submittedCoords]->levelId);
 
             //Check that the submitted coords match.
             $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-            logWarn($submissionData['levelName'] . "-" . $levelInCard->levelId);
             if($submissionData['levelName'] == $levelInCard->levelId)
             {
-                logMessage("Level ID matches, pre-submission all validated");
                 return true;
             }
             else
@@ -887,7 +872,7 @@ class GameController
 
         if($levelInCard->claimedBy == Team::NONE)
         {
-            logInfo("Level is unclaimed, claiming for their team");
+            logInfo("Level is unclaimed, claiming for team " .$submissionData['team']);
             $levelInCard->claimedBy = Team::tryFrom($submissionData['team']);
             $levelInCard->personToBeat = $submissionData['playerName'];
             $levelInCard->timeToBeat = $submissionData['time'];
@@ -935,7 +920,6 @@ class GameController
             }
             else
             {
-                logWarn("Run did not beat current criteria");
                 return -1;
             }
         }
