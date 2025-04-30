@@ -93,6 +93,15 @@ $mapPools['encore'] = generatePool(array(
 $mapPools['angryStandard'] = generatePool(array(
     array("FUN SIZED HERESY","fnchannel.fsheresy.fireswithinfires", "ae6eeb9c8e3741441986985171f75b56"),
     array("WALLS OF WICKED DREAMS","robi.heresy.wowd", "309b60fc131a95d49921d31c0ec7560f"),
+    array("RE-LUDE","elequacity.relude.heatseeker","97220d9c4569778488734e80e0daa734"),
+    array("A PRIMUM MOBILE","YoullTim.APrimumMobile1","fd4229c3005a73744ab5a4597cfaf75f"),
+    array("EPITAPH","willem1321-epitaph", "a9137dc898362c44593878839cd899a6"),
+),true);
+
+$mapPools['angryHardcore'] = generatePool(array(
+    array("FREEDOM DIVE","aaaa.aaaaaa.aaaaaeeeeeaaa","f907c5991d40a2a48941d1c1dde860c7"),
+    array("FRAUDULENCE - FOOLS GOLD","Spelunky.FRAUDULENCE_FIRST", "033ce9db13ba74d4aa07bdae343d49c2"),
+    array("FRAUDULENCE - HIGH SOCIETY","Spelunky.FRAUDULENCE_SECOND", "033ce9db13ba74d4aa07bdae343d49c2"),
 ),true);
 
 
