@@ -83,7 +83,14 @@ class GameGrid
 
         foreach($mapPoolIds as $id)
         {
-            $levelPool = array_merge($levelPool,$mapPools[$id]);
+            if($mapPools[$id] == null)
+            {
+                logWarn("Given map pool ID " .$id. " does not have any data! Skipping");
+            }
+            else
+            {
+                $levelPool = array_merge($levelPool, $mapPools[$id]);
+            }
         }
 
         for($x = 0; $x <= $this->size-1; $x++)
