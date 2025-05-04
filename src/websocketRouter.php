@@ -36,6 +36,10 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
         $steamId = $gameDetails[2];
 
         logWarn("Player who timed out:".$username);
+
+        //Remove the associated connection & player object from the associated game.
+        unset($associatedGame->currentPlayers[$steamId]);
+
         //If the SteamID of the player who dropped is the host of the associated game, end the game for all players and remove
         //the game from the current game list.
         if($associatedGame->gameHost == $steamId)
