@@ -792,7 +792,7 @@ class GameController
         $dcMessage->disconnectCode = 1001;
         $dcMessage->disconnectMessage = $disconnectReason;
 
-        $message = buildNetworkMessage("ServerDisconnection",new DisconnectSignal());
+        $message = buildNetworkMessage("ServerDisconnection",$dcMessage);
 
         foreach($game->currentPlayers as $playerSteamId => $playerObj)
         {
