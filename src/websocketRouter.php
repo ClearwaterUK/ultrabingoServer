@@ -88,7 +88,8 @@ function handleError(\WebSocket\Connection $connection,\WebSocket\Exception\Exce
             }
             //unset($associatedGame->currentPlayers[$indexToUnset]);
         }
-        //unregisterConnection($steamId);
+        updatePlayerCount($associatedGame->gameId,-1);
+        unregisterConnection($steamId);
     }
     $connection->disconnect();
 }
