@@ -230,6 +230,7 @@ function onMessageRecieved($message,$connection):void
                     logInfo("Player ". $receivedJson['playerToKick']." was kicked from game ".$receivedJson['gameId']);
                     $gameCoordinator->kickPlayer($receivedJson['gameId'],$receivedJson['playerToKick']);
                 }
+                break;
             }
 
             case "LeaveGame":
