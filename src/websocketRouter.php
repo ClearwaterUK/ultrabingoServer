@@ -15,7 +15,7 @@ function sendEncodedMessage($messageToSend,$connection):void
     {
         logError("Failed to send message to connection!");
         logError($e->getMessage());
-        logError($e->getTrace());
+        var_export($e->getTrace());
     }
 }
 

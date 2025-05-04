@@ -570,7 +570,7 @@ class GameController
         $this->currentGames[$gameId]->addPlayerToGame($playerToAdd,$steamId);
 
         //Broadcast the new player joining to everyone else in the current Game.
-        $message = buildNetworkMessage("JoinRoomNotification",new JoinRoomNotification($playerName,$steamId));
+        $message = buildNetworkMessage("JoinRoomNotification",new JoinRoomNotification($playerName,$steamId,$rank));
 
         //Send the message to the client first, then send it to everyone else.
         foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
