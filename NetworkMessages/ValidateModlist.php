@@ -1,14 +1,14 @@
 <?php
 class ValidateModlist
 {
-    public $status;
+    public $nonWhitelistedMods;
     public $latestVersion;
     public $motd;
     public $availableRanks;
 
-    public function __construct($status,$latestVersion,$motd,$availableRanks)
+    public function __construct($nonWhitelistedMods,$latestVersion,$motd,$availableRanks)
     {
-        $this->status = $status;
+        $this->nonWhitelistedMods = $nonWhitelistedMods;
         $this->latestVersion = $latestVersion;
         $this->motd = $motd;
         $this->availableRanks = $availableRanks;
