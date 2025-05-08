@@ -59,11 +59,13 @@ function verifyModList($modList,$steamId)
     $whitelistedMods =
         [   "AngryLevelLoader",
             "Baphomet's BINGO",
+            "BetterWeaponHUDs",
             "Configgy",
             "Damage Style HUD",
             "EasyPZ",
             "HandPaint",
             "Healthbars",
+            "JadeLib",
             "IntroSkip",
             "PluginConfigurator",
             "StyleEditor",
