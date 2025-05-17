@@ -96,12 +96,21 @@ $mapPools['angryStandard'] = generatePool(array(
     array("RE-LUDE","elequacity.relude.heatseeker","97220d9c4569778488734e80e0daa734"),
     array("A PRIMUM MOBILE","YoullTim.APrimumMobile1","fd4229c3005a73744ab5a4597cfaf75f"),
     array("EPITAPH","willem1321-epitaph", "a9137dc898362c44593878839cd899a6"),
+    array("V3'S SHOWDOWN - PHASE 1","t.trinity.v3", "91a952cfd5574ef47bf624e09c311260")
 ),true);
 
 $mapPools['angryHardcore'] = generatePool(array(
     array("FREEDOM DIVE","aaaa.aaaaaa.aaaaaeeeeeaaa","f907c5991d40a2a48941d1c1dde860c7"),
     array("FRAUDULENCE - FOOLS GOLD","Spelunky.FRAUDULENCE_FIRST", "033ce9db13ba74d4aa07bdae343d49c2"),
     array("FRAUDULENCE - HIGH SOCIETY","Spelunky.FRAUDULENCE_SECOND", "033ce9db13ba74d4aa07bdae343d49c2"),
+    array("HEART OF THE MACHINE","bobot.hellfacility.hotm", "255ce156d5ae53c449106c1a31ed384a"),
+    array("V3'S SHOWDOWN - PHASE 2","trinity.v3mech", "91a952cfd5574ef47bf624e09c311260")
+),true);
+
+$mapPools['testing'] = generatePool(array(
+    array("MACHINATION - THE BLASTPIPE","MachinationM-1V2","a1f9bb7c418870d499158f9c2b55731e"),
+    array("OPERETTAS - WHAT COULD HAVE BEEN","tuli.snowlimbo", "7b9762c4a51906e4ca36acfcbcdbde3e"),
+    array("TOWER OF STEEL - TOTAL WAR","tos_1", "adb0ef3e5cc07c84889dd27f7898af96"),
 ),true);
 
 
