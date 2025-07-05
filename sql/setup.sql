@@ -85,3 +85,10 @@ create table userRanks
     U_RANKID int NOT NULL,
     FOREIGN KEY (U_RANKID) REFERENCES ranks(R_ID)
 );
+
+create table chatBlock
+(
+    B_ID int NOT NULL AUTO_INCREMENT primary key,
+    B_STEAMID varchar(64),
+    B_WARNLEVEL tinyint -- 1 = warn, 2 == final warn, 3 == barred from chat use
+);

@@ -128,6 +128,7 @@ function onMessageRecieved($message,$connection):void
     if(!isset($receivedJson["messageType"]))
     {
         logError("Message type was not defined, dropping message");
+        set_time_limit(0);
         return;
     }
 
@@ -419,7 +420,10 @@ function onMessageRecieved($message,$connection):void
                 //Fetch the current message of the day.
                 $motd = file_get_contents(__DIR__."/../motd.txt");
 
-                $message = buildNetworkMessage("ModVerificationResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks));
+                //Check if the player can use in-game chat
+                $canUseChat = hasChatAccess($receivedJson['steamId']);
+
+                $message = buildNetworkMessage("ModVerificationResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks,$canUseChat));
                 sendEncodedMessage($message,$connection);
                 break;
             }
@@ -487,6 +491,73 @@ function onMessageRecieved($message,$connection):void
                 }
                 break;
             }
+
+            case "ChatMessage":
+            {
+                if(verifyConnection(($receivedJson['ticket'])))
+                {
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        $game = $gameCoordinator->currentGames[$gameId];
+                        //Check that the user can access chat. If not, drop the message.
+                        if(!hasChatAccess($receivedJson['steamId']))
+                        {
+                            break;
+                        }
+
+                        //Check that the chat message doesn't contain any foul content
+                        $status = "";
+                        if(verifyMessageSanity($receivedJson['chatMessage']))
+                        {
+                            //Check if message is global (to all players in game), or only for players in team.
+                            if($receivedJson['isGlobal'])
+                            {
+                                $message = buildNetworkMessage("ChatMessage", new ChatMessage($receivedJson['username'],$receivedJson['chatMessage'],0));
+
+                                broadcastToAllPlayers($game,$message);
+                            }
+                            else
+                            {
+                                //Get the team of the player who sent the message, and then send the message to all other players on that team.
+                                $originalPlayerTeam = $game->currentPlayers[$receivedJson['steamId']]->team;
+
+                                foreach($game->currentPlayers as $playerSteamId => $playerObj) {
+                                    if($playerObj->team == $originalPlayerTeam) {
+                                        $message = buildNetworkMessage("ChatMessage",new ChatMessage($receivedJson['username'],$receivedJson['chatMessage'],1));
+                                        sendEncodedMessage($message,$playerObj->websocketConnection);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //Block the message if checks fail and lookup current warning status of player.
+                            $currentLevel = getWarnLevel($receivedJson['steamId']);
+
+                            if($currentLevel == -1)
+                            {
+                                logInfo("First warn");
+                                setWarnLevel($receivedJson['steamId'],0);
+                            }
+                            else
+                            {
+                                switch($currentLevel)
+                                {
+                                    case 0: {logInfo("Final warning"); break;}
+                                    case 1: {logInfo("-- SteamID ".$receivedJson['steamId']." is now blocked from chat --"); break;}
+                                }
+                                setWarnLevel($receivedJson['steamId'],$currentLevel+1);
+                            }
+
+                            $message = buildNetworkMessage("ChatWarn", new ChatWarn($currentLevel+1));
+                            sendEncodedMessage($message,$connection);
+                        }
+                    }
+                }
+                break;
+            }
+
             default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
         }
     }

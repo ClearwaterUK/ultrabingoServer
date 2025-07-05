@@ -335,7 +335,7 @@ function verifyConnection($steamTicket,$checkHost=false)
     }
     else
     {
-        logError("Connection invalid!");
+        logError("Connection invalid, no result!");
         return false;
     }
 
@@ -511,7 +511,6 @@ function broadcastToAllPlayers(Game $game,$message,callable $callback = null)
                 sendEncodedMessage($message,$playerObj->websocketConnection);
             }
         }
-
     }
 }
 
@@ -526,5 +525,76 @@ function loadEnvFile($path):void
     $dotenv->load();
 }
 
+function verifyMessageSanity($message)
+{
+    //Strip special characters, spaces, etc from original message
+    $strippedMessage = str_replace(' ','',$message);
+
+    $badWordFilter = array(
+        'gook',
+        'fag',
+        'faggot',
+        'negro',
+        'nig',
+        'nigga',
+        'nigger',
+        'nig nog',
+        'poof',
+        'poofter'
+    );
+
+    return array_reduce($badWordFilter, fn($a, $n) => $a || str_contains($strippedMessage, $n), false) == false;
+
+}
+
+function hasChatAccess($steamId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("SELECT B_WARNLEVEL FROM chatBlock WHERE B_STEAMID = ?");
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetch();
+
+    if($res == false || $res['B_WARNLEVEL'] == null) {return true;}
+    return $res['B_WARNLEVEL'] != 2;
+}
+
+function getWarnLevel($steamId)
+{
+    global $dbc;
+
+    $request = $dbc->prepare("SELECT B_WARNLEVEL FROM chatBlock WHERE B_STEAMID = ?");
+    $request->bindParam(1,$steamId,PDO::PARAM_STR);
+
+    $request->execute();
+    $res = $request->fetch();
+
+    if($res == false) {return -1;}
+    return $res['B_WARNLEVEL'];
+}
+
+function setWarnLevel($steamId,$newWarnLevel)
+{
+    global $dbc;
+
+    if($newWarnLevel == 0)
+    {
+        $request = $dbc->prepare("INSERT INTO chatBlock (B_STEAMID, B_WARNLEVEL) VALUES (?,?)");
+        $request->bindParam(1,$steamId,PDO::PARAM_STR);
+        $request->bindParam(2,$newWarnLevel,PDO::PARAM_INT);
+    }
+
+    else
+    {
+        $request = $dbc->prepare("UPDATE chatBlock SET B_WARNLEVEL = ? WHERE B_STEAMID = ?");
+        $request->bindParam(1,$newWarnLevel,PDO::PARAM_INT);
+        $request->bindParam(2,$steamId,PDO::PARAM_STR);
+
+    }
+
+    $request->execute();
+}
 
 ?>
