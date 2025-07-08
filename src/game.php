@@ -81,16 +81,14 @@ class GameGrid
             return;
         }
 
-        foreach($mapPoolIds as $id)
+        //Fetch all the maps of selected mapppools from the database.
+        $maps = fetchMapsFromMapPools($mapPoolIds);
+
+        $levelPool = array();
+        foreach($maps as $map)
         {
-            if($mapPools[$id] == null)
-            {
-                logWarn("Given map pool ID " .$id. " does not have any data! Skipping");
-            }
-            else
-            {
-                $levelPool = array_merge($levelPool, $mapPools[$id]);
-            }
+            $mapInfo = new LevelInformation($map['L_LEVELNAME'],$map['L_LEVELID'],$map['L_LEVELISCUSTOM'],$map['L_ANGRYBUNDLE']);
+            array_push($levelPool,$mapInfo);
         }
 
         for($x = 0; $x <= $this->size-1; $x++)

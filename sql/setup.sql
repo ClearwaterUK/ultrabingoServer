@@ -86,9 +86,31 @@ create table userRanks
     FOREIGN KEY (U_RANKID) REFERENCES ranks(R_ID)
 );
 
+source ./ranks.sql;
+
 create table chatBlock
 (
     B_ID int NOT NULL AUTO_INCREMENT primary key,
     B_STEAMID varchar(64),
     B_WARNLEVEL tinyint -- 1 = warn, 2 == final warn, 3 == barred from chat use
 );
+
+create table mapPools
+(
+    MP_ID int NOT NULL AUTO_INCREMENT primary key,
+    MP_NAME varchar(64),
+    MP_DESCRIPTION varchar(512)
+);
+
+create table levels
+(
+    L_ID int NOT NULL AUTO_INCREMENT primary key,
+    L_LEVELNAME varchar(256),
+    L_LEVELID varchar(256),
+    L_LEVELISCUSTOM BOOLEAN NOT NULL DEFAULT 0,
+    L_ANGRYBUNDLE varchar(256),
+    L_MPID int NOT NULL,
+    FOREIGN KEY (L_MPID) REFERENCES mapPools(MP_ID)
+);
+
+source ./levels.sql;

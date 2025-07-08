@@ -350,7 +350,7 @@ function onMessageRecieved($message,$connection):void
                     if(array_key_exists($gameId,$gameCoordinator->currentGames))
                     {
                         logMessage("Updating map pools for game ".$gameId);
-                        $gameCoordinator->currentGames[$gameId]->updateMapPool(array_values($receivedJson["mapPoolIds"]));
+                        $gameCoordinator->currentGames[$gameId]->updateMapPool($receivedJson["mapPoolIds"]);
                     }
                     else
                     {
@@ -554,6 +554,17 @@ function onMessageRecieved($message,$connection):void
                             sendEncodedMessage($message,$connection);
                         }
                     }
+                }
+                break;
+            }
+
+            case "GetMapPools":
+            {
+                if(verifyConnection(($receivedJson['ticket'])))
+                {
+                    $mapPools = getMapPools();
+                    $message = buildNetworkMessage("MapPools", new MapPools($mapPools));
+                    sendEncodedMessage($message,$connection);
                 }
                 break;
             }
