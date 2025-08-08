@@ -29,6 +29,10 @@ $PORT = $_ENV['SERVER_PORT'];
 $networkMessageFolder = glob(__DIR__.'/NetworkMessages/*.php');
 foreach($networkMessageFolder as $file) { require_once $file;}
 
+logInfo("Fetching online Angry catalog");
+require_once (__DIR__.'/src/AngryCatalog.php');
+$CATALOG = new AngryCatalog();
+
 logInfo("Loading level list");
 require_once (__DIR__.'/src/levels.php');
 

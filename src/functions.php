@@ -607,17 +607,27 @@ function getMapPools()
     return $request->fetchAll();
 }
 
-function fetchMapsFromMapPools($mapPools)
+function fetchSelectedMapData($mapIds)
 {
-    global $dbc;
+    global $CATALOG;
 
-    $mapPoolArr = implode(',',$mapPools);
-    $request = $dbc->prepare("SELECT L_LEVELNAME, L_LEVELID, L_LEVELISCUSTOM, L_ANGRYBUNDLE from levels WHERE L_MPID IN ($mapPoolArr)");
+    $levelData = array();
 
-    $request->execute();
-
-    return $request->fetchAll();
-
+    foreach($mapIds as $id)
+    {
+        //Campaign
+        if(str_contains($id,'Level '))
+        {
+            $levelData[$id] = array($id,$id,false,"");
+        }
+        //Custom level
+        else
+        {
+            $data = $CATALOG->levelInfo[$id];
+            $levelData[$id] = array($data[0],$data[1],true,$data[3]);
+        }
+    }
+    return $levelData;
 }
 
 ?>

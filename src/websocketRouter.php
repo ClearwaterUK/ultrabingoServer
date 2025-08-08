@@ -224,7 +224,7 @@ function onMessageRecieved($message,$connection):void
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
                     logMessage("Starting game ".$receivedJson['roomId']);
-                    $gameCoordinator->startGame($receivedJson['roomId']);
+                    $gameCoordinator->startGame($receivedJson['roomId'],$receivedJson['selectedMapIds']);
                 }
                 break;
             }
