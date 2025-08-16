@@ -71,21 +71,19 @@ class GameGrid
 
     public array $reserveLevels; //Array containing levels to replace in a reroll vote.
 
-    public function populateGrid($mapIds):void
+    public function populateGrid($mapPoolIds):void
     {
-        if(count($mapIds) == 0)
-        {
-            logWarn("mapIds length is 0!");
-            return;
-        }
+        global $mapPools;
 
-        //Fetch all data from selected maps from the database.
-        $maps = fetchMapsFromMapPools($mapIds);
+        if(count($mapPoolIds) == 0) {return;}
+
+        //Fetch all the map data of selected maps from the Angry catalog.
+        $maps = fetchSelectedMapData($mapPoolIds);
 
         $levelPool = array();
         foreach($maps as $map)
         {
-            $mapInfo = new LevelInformation($map['L_LEVELNAME'],$map['L_LEVELID'],$map['L_LEVELISCUSTOM'],$map['L_ANGRYBUNDLE']);
+            $mapInfo = new LevelInformation($map[0],$map[1],$map[2],$map[3]);
             array_push($levelPool,$mapInfo);
         }
 
@@ -93,11 +91,9 @@ class GameGrid
         {
             for($y = 0; $y <= $this->size-1; $y++)
             {
-
                 //Pick a level from our level list, set it, and then remove to prevent duplicates
                 $selectedIndex = array_rand($levelPool);
                 $levelObj = $levelPool[$selectedIndex];
-
                 $levelToInsert = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$x,$y,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
 
                 //$levelToInsert = new GameLevel($rand,$x,$y);
@@ -108,10 +104,10 @@ class GameGrid
         $this->reserveLevels = $levelPool;
     }
 
-    public function __construct($size=3,$maps="")
+    public function __construct($size=3,$mapIds="")
     {
         $this->size = $size;
-        $this->populateGrid($maps);
+        $this->populateGrid($mapIds);
     }
 }
 
@@ -540,10 +536,10 @@ class Game
         var_export($this->teams);
     }
 
-
-    public function generateGrid($size=3, $selectedMapIds=array()):void
+    public function generateGrid($size=3,$mapIds=""):void
     {
-        $this->grid = new GameGrid($size,$selectedMapIds);
+        logWarn("GenerateGrid called with size".$size);
+        $this->grid = new GameGrid($size,$mapIds);
     }
 }
 
@@ -700,6 +696,7 @@ class GameController
             {
                 //Initialise vote status for all players
                 $gameToStart->playerVotePerms[$playerSteamId] = true;
+
 
                 //Send the game start signal to all players in the game
                 $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid));
