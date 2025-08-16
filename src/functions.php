@@ -611,10 +611,13 @@ function fetchMapsFromMapPools($mapPools)
 {
     global $dbc;
 
-    $mapPoolArr = implode(',',$mapPools);
-    $request = $dbc->prepare("SELECT L_LEVELNAME, L_LEVELID, L_LEVELISCUSTOM, L_ANGRYBUNDLE from levels WHERE L_MPID IN ($mapPoolArr)");
+    $queryPlaceholder = str_repeat('?,', count($mapPools) - 1) . '?';
 
-    $request->execute();
+    $request = $dbc->prepare("SELECT L_LEVELNAME, L_LEVELID, L_LEVELISCUSTOM, L_ANGRYBUNDLE from levels WHERE L_LEVELID IN ($queryPlaceholder)");
+
+    $request->debugDumpParams();
+
+    $request->execute($mapPools);
 
     return $request->fetchAll();
 

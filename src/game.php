@@ -71,18 +71,16 @@ class GameGrid
 
     public array $reserveLevels; //Array containing levels to replace in a reroll vote.
 
-    public function populateGrid($mapPoolIds):void
+    public function populateGrid($mapIds):void
     {
-        global $mapPools;
-
-        $levelPool = array();
-        if(count($mapPoolIds) == 0)
+        if(count($mapIds) == 0)
         {
+            logWarn("mapIds length is 0!");
             return;
         }
 
-        //Fetch all the maps of selected mapppools from the database.
-        $maps = fetchMapsFromMapPools($mapPoolIds);
+        //Fetch all data from selected maps from the database.
+        $maps = fetchMapsFromMapPools($mapIds);
 
         $levelPool = array();
         foreach($maps as $map)
@@ -110,10 +108,10 @@ class GameGrid
         $this->reserveLevels = $levelPool;
     }
 
-    public function __construct($size=3,$mapPoolIds="")
+    public function __construct($size=3,$maps="")
     {
         $this->size = $size;
-        $this->populateGrid($mapPoolIds);
+        $this->populateGrid($maps);
     }
 }
 
@@ -542,9 +540,10 @@ class Game
         var_export($this->teams);
     }
 
-    public function generateGrid($size=3):void
+
+    public function generateGrid($size=3, $selectedMapIds=array()):void
     {
-        $this->grid = new GameGrid($size,$this->gameSettings->selectedMapPools);
+        $this->grid = new GameGrid($size,$selectedMapIds);
     }
 }
 
@@ -666,7 +665,7 @@ class GameController
         }
     }
 
-    public function startGame(Int $gameId):void
+    public function startGame(Int $gameId, $selectedMapIds):void
     {
         if(array_key_exists($gameId,$this->currentGames))
         {
@@ -682,7 +681,7 @@ class GameController
             }
 
             $gameToStart->gameState = GameState::inGame;
-            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3);
+            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3,$selectedMapIds);
 
             $gameToStart->gamemode = makeGamemode($gameToStart->gameSettings->gamemode);
             $gameToStart->gamemode->setup($gameToStart);
