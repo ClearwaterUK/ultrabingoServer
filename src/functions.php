@@ -96,7 +96,7 @@ function lookForGame($roomPassword)
 {
     global $dbc;
 
-    $request = $dbc->prepare("SELECT R_ID,R_CURRENTPLAYERS,R_MAXPLAYERS,R_TEAMCOMPOSITION,R_JOINABLE,R_HASSTARTED FROM currentGames WHERE R_PASSWORD = ?");
+    $request = $dbc->prepare("SELECT R_ID,R_CURRENTPLAYERS,R_MAXPLAYERS,R_TEAMCOMPOSITION,R_JOINABLE,R_HASSTARTED, R_ALLOWREJOIN FROM currentGames WHERE R_PASSWORD = ?");
     $request->bindParam(1,$roomPassword,PDO::PARAM_STR);
     $request->execute();
 
@@ -141,8 +141,16 @@ function checkJoinEligibility($game,$steamId,$ip)
     }
     if($game['R_HASSTARTED'] == 1)
     {
-        logWarn("Game has already started");
-        return -2;
+        if($game['R_ALLOWREJOIN'] == 1)
+        {
+            logInfo("Player will be joining mid-game");
+            return 1;
+        }
+        else
+        {
+            logWarn("Game has already started");
+            return -2;
+        }
     }
 
     return 0;
@@ -213,7 +221,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_DIFFICULTY = ?,
     R_PRANKREQUIRED = ?,
     R_DISABLECAMPAIGNALTEXIT = ?,
-    R_ISPUBLIC = ?
+    R_ISPUBLIC = ?,
+    R_ALLOWREJOIN = ?
     WHERE R_ID = ?");
 
     $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
@@ -225,7 +234,8 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
     $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
     $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
-    $request->bindParam(10,$roomId,PDO::PARAM_INT);
+    $request->bindParam(10,$newSettings->allowRejoin,PDO::PARAM_BOOL);
+    $request->bindParam(11,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 

@@ -7,6 +7,8 @@ interface IGameMode
     public function onMapClaim(Game $game, $recievedJson,$submitResult,$mapIsBeingVoted): void;
 
     public function endGame(Game $game,$receivedJson=""):void;
+
+    public function timeRemaining():int;
 }
 
 class BaseGamemode implements IGameMode
@@ -27,15 +29,20 @@ class BaseGamemode implements IGameMode
     {
 
     }
+
+    public function timeRemaining(): int
+    {
+        return 0;
+    }
 }
 
 class DominationGamemode extends BaseGamemode implements IGameMode
 {
     public EvTimer $time;
 
-    public function timeRemaining()
+    public function timeRemaining():int
     {
-        return $this->time->remaining;
+        return intval($this->time->remaining);
     }
 
     public function setup(Game $game):void
@@ -134,6 +141,11 @@ class BingoGamemode extends BaseGamemode implements IGameMode
     public function setup(Game $game): void
     {
         logInfo("Setting up Bingo gamemode");
+    }
+
+    public function timeRemaining():int
+    {
+        return 0;
     }
 
     public function onMapClaim(Game $game, $recievedJson, $submitResult, $mapIsBeingVoted): void

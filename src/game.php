@@ -141,6 +141,7 @@ class GameSettings
     public bool $requiresPRank;
     public bool $disableCampaignAltExits;
     public int $gameVisibility;
+    public bool $allowRejoin;
 
     public int $dominationTimer;
 
@@ -161,8 +162,9 @@ class GameSettings
         $this->gridSize = 0;                    //3x3 by default
         $this->gamemode = 0;                    //Normal bingo by default
         $this->difficulty = 2;                  //Standard by default
-        $this->requiresPRank = false;           //P-Rank not requried by default
+        $this->requiresPRank = false;           //P-Rank not required by default
         $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
+        $this->allowRejoin = true;              //Allow (re)joining mid-game by default
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
 
@@ -564,8 +566,6 @@ class GameController
 
         //Broadcast the new player joining to everyone else in the current Game.
         $message = buildNetworkMessage("JoinRoomNotification",new JoinRoomNotification($playerName,$steamId,$rank));
-
-        //Send the message to the client first, then send it to everyone else.
         foreach($this->currentGames[$gameId]->currentPlayers as $playerSteamId => $playerObj)
         {
             if($steamId <> $playerSteamId)
@@ -629,6 +629,7 @@ class GameController
             $newSettings->requiresPRank = $settings['PRankRequired'];
             $newSettings->disableCampaignAltExits = $settings['disableCampaignAltExits'];
             $newSettings->gameVisibility = $settings['gameVisibility'];
+            $newSettings->allowRejoin = $settings['allowRejoin'];
             $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
             $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
             $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;

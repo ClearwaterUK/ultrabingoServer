@@ -183,13 +183,53 @@ function onMessageRecieved($message,$connection):void
                 {
                     $gameId = intval($game['R_ID']);
                     $canJoin = checkJoinEligibility($game,$receivedJson['steamId'],explode(":",$connection->getRemoteName())[0]);
-                    if($canJoin == 0)
+                    if($canJoin == 0 || $canJoin == 1)
                     {
+                        //Normal join
                         $gameCoordinator->joinGame($gameId,$receivedJson['username'],$receivedJson['steamId'],$connection,$receivedJson['rank']);
 
-                        $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]));
+                        //If player was previously in the game, put them on the team they were previously on.
+                        if($canJoin == 1)
+                        {
+                            $wasInGame = false;
+                            $midgameTeam = "";
 
-                        sendEncodedMessage($message,$connection);
+                            //Check if player was previously in game.
+                            foreach($gameCoordinator->currentGames[$gameId]->teams as $teamColor => $team)
+                            {
+                                $searchRes = in_array($receivedJson['username'],$team);
+                                if($searchRes !== false)
+                                {
+                                    logMessage("Found player on ".$teamColor.", setting player to that team");
+                                    $midgameTeam = $teamColor;
+                                    $wasInGame = true;
+                                    break;
+                                }
+                            }
+
+                            //If player wasn't already in the game, put them on the team with the least amount of players.
+                            if(!$wasInGame)
+                            {
+                                global $teamPointers;
+                                $counts = array_map('count',$gameCoordinator->currentGames[$gameId]->teams);
+                                $minKey = min($counts);
+                                $keys = array_keys($counts,$minKey);
+                                $midgameTeam = $keys[0];
+                                $team = array_search($keys[0],$teamPointers);
+                                logMessage("Player not found on any team, adding to team with least amount of players (".$midgameTeam.")");
+
+                                $gameCoordinator->currentGames[$gameId]->putPlayerInTeam($receivedJson['username'],$team);
+                            }
+
+                            $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId],$midgameTeam,array(),$gameCoordinator->currentGames[$gameId]->gamemode->timeRemaining(), !$wasInGame));
+                            sendEncodedMessage($message,$connection);
+
+                        }
+                        else
+                        {
+                            $message = buildNetworkMessage("JoinRoomResponse",new JoinRoomResponse($canJoin,$gameId,$gameCoordinator->currentGames[$gameId]));
+                            sendEncodedMessage($message,$connection);
+                        }
                     }
                     else
                     {

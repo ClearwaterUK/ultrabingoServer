@@ -7,11 +7,26 @@ class JoinRoomResponse
 
     public $roomDetails;
 
-    public function __construct($status,$roomId,$roomDetails=null)
+    public $joinMidgameTeam;
+    public $joinMidgameTeammates;
+
+    public $joinMidGameDominationTime;
+
+    public $needsTeam;
+    public $joinMidGameTeam;
+
+    public function __construct($status,$roomId,$roomDetails=null,$joinMidgameTeam=null,$joinMidgameTeammates=array(),$joinMidGameDominationTime=0,$needsTeam=false,$teamName="")
     {
         $this->status = $status;
         $this->roomId = $roomId;
         $this->roomDetails = $roomDetails;
+        $this->joinMidgameTeam = $joinMidgameTeam;
+        $this->joinMidgameTeammates = $joinMidgameTeammates;
+
+        $this->joinMidGameDominationTime = $joinMidGameDominationTime;
+
+        $this->needsTeam = $needsTeam;
+        $this->joinMidGameTeam = $teamName;
     }
 }
 
