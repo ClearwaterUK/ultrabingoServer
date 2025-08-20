@@ -11,11 +11,13 @@ class RoomUpdateNotification
     public $difficulty;
     public $PRankRequired;
     public $disableCampaignAltExits;
+    public $allowRejoin;
+    public $gameModifier;
     public $gameVisibility;
 
     public $wereTeamsReset;
 
-    public function __construct($maxPlayers,$maxTeams,$teamComposition,$PRankRequired,$timeLimit,$difficulty,$gridSize,$disableCampaignAltExits,$gameVisibility,$gamemode,$wereTeamsReset=false)
+    public function __construct($maxPlayers,$maxTeams,$teamComposition,$PRankRequired,$timeLimit,$difficulty,$gridSize,$disableCampaignAltExits,$gameVisibility,$gamemode,$allowRejoin, $gameModifier, $wereTeamsReset=false)
     {
         $this->maxPlayers = $maxPlayers;
         $this->maxTeams = $maxTeams;
@@ -26,6 +28,9 @@ class RoomUpdateNotification
         $this->difficulty = $difficulty;
         $this->gridSize = $gridSize;
         $this->disableCampaignAltExits = $disableCampaignAltExits;
+        $this->allowRejoin = $allowRejoin;
+        $this->gameModifier = $gameModifier;
+
         $this->gameVisibility = $gameVisibility;
 
         $this->wereTeamsReset = $wereTeamsReset;

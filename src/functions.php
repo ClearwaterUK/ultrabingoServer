@@ -222,6 +222,7 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_PRANKREQUIRED = ?,
     R_DISABLECAMPAIGNALTEXIT = ?,
     R_ISPUBLIC = ?,
+    R_MODIFIER = ?,
     R_ALLOWREJOIN = ?
     WHERE R_ID = ?");
 
@@ -234,8 +235,9 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
     $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
     $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
-    $request->bindParam(10,$newSettings->allowRejoin,PDO::PARAM_BOOL);
-    $request->bindParam(11,$roomId,PDO::PARAM_INT);
+    $request->bindParam(10,$newSettings->gameModifier,PDO::PARAM_INT);
+    $request->bindParam(11,$newSettings->allowRejoin,PDO::PARAM_BOOL);
+    $request->bindParam(12,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 

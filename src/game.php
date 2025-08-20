@@ -142,6 +142,7 @@ class GameSettings
     public bool $disableCampaignAltExits;
     public int $gameVisibility;
     public bool $allowRejoin;
+    public int $gameModifier;
 
     public int $dominationTimer;
 
@@ -165,6 +166,7 @@ class GameSettings
         $this->requiresPRank = false;           //P-Rank not required by default
         $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
         $this->allowRejoin = true;              //Allow (re)joining mid-game by default
+        $this->gameModifier = 0;                //No modifiers by default
         $this->hasManuallySetTeams = false;
         $this->selectedMapPools = array();
 
@@ -616,6 +618,8 @@ class GameController
         $wereTeamsReset = false;
         if(array_key_exists($settings['roomId'],$this->currentGames))
         {
+            var_export($settings);
+
             $gameToUpdate = $this->currentGames[$settings['roomId']];
 
             $newSettings = new GameSettings();
@@ -630,6 +634,7 @@ class GameController
             $newSettings->disableCampaignAltExits = $settings['disableCampaignAltExits'];
             $newSettings->gameVisibility = $settings['gameVisibility'];
             $newSettings->allowRejoin = $settings['allowRejoin'];
+            $newSettings->gameModifier = $settings['gameModifier'];
             $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
             $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
             $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;
@@ -644,7 +649,7 @@ class GameController
 
             $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
 
-            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['timeLimit'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$wereTeamsReset));
+            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['timeLimit'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$settings['allowRejoin'],$settings['gameModifier'],$wereTeamsReset));
 
             updateGameSettings($settings['roomId'],$newSettings);
 
