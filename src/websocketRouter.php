@@ -497,22 +497,26 @@ function onMessageRecieved($message,$connection):void
 
                         logMessage("Requesting reroll of map at ".$receivedJson['column']."-".$receivedJson['row'] . " in game " . $gameId);
 
-                        //Start by checking if a vote is already active or not.
-                        if($game->isVoteActive())
+                        //Make sure there are maps in reserve that can be used.
+                        if(count($game->grid->reserveLevels) > 0)
                         {
-                            //If vote is active, make sure player hasn't already voted.
-                            if(!$game->hasPlayerVoted($receivedJson['steamId']))
+                            //Start by checking if a vote is already active or not.
+                            if($game->isVoteActive())
                             {
-                                $game->addPlayerVote($receivedJson['steamId']);
+                                //If vote is active, make sure player hasn't already voted.
+                                if(!$game->hasPlayerVoted($receivedJson['steamId']))
+                                {
+                                    $game->addPlayerVote($receivedJson['steamId']);
+                                }
                             }
-                        }
-                        else
-                        {
-                            logMessage("Vote not active in game, starting");
-                            //Check if player can start vote.
-                            if($game->canPlayerStartVote($receivedJson['steamId']))
+                            else
                             {
-                                $game->startRerollVote($receivedJson['steamId'],$receivedJson['column'],$receivedJson['row']);
+                                logMessage("Vote not active in game, starting");
+                                //Check if player can start vote.
+                                if($game->canPlayerStartVote($receivedJson['steamId']))
+                                {
+                                    $game->startRerollVote($receivedJson['steamId'],$receivedJson['column'],$receivedJson['row']);
+                                }
                             }
                         }
                     }
