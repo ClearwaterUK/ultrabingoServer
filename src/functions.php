@@ -209,7 +209,7 @@ function getGameFromPassword($roomPassword)
     }
 }
 
-function updateGameSettings(Int $roomId,GameSettings $newSettings)
+function updateGameSettings(Int $roomId, $newSettings)
 {
     global $dbc;
     $request = $dbc->prepare("UPDATE currentGames 
@@ -226,17 +226,17 @@ function updateGameSettings(Int $roomId,GameSettings $newSettings)
     R_ALLOWREJOIN = ?
     WHERE R_ID = ?");
 
-    $request->bindParam(1,$newSettings->maxPlayers,PDO::PARAM_INT);
-    $request->bindParam(2,$newSettings->maxTeams,PDO::PARAM_INT);
-    $request->bindParam(3,$newSettings->teamComposition,PDO::PARAM_INT);
-    $request->bindParam(4,$newSettings->gridSize,PDO::PARAM_INT);
-    $request->bindParam(5,$newSettings->gamemode,PDO::PARAM_INT);
-    $request->bindParam(6,$newSettings->difficulty,PDO::PARAM_INT);
-    $request->bindParam(7,$newSettings->requiresPRank,PDO::PARAM_BOOL);
-    $request->bindParam(8,$newSettings->disableCampaignAltExits,PDO::PARAM_BOOL);
-    $request->bindParam(9,$newSettings->gameVisibility,PDO::PARAM_INT);
-    $request->bindParam(10,$newSettings->gameModifier,PDO::PARAM_INT);
-    $request->bindParam(11,$newSettings->allowRejoin,PDO::PARAM_BOOL);
+    $request->bindParam(1,$newSettings['maxPlayers'],PDO::PARAM_INT);
+    $request->bindParam(2,$newSettings['maxTeams'],PDO::PARAM_INT);
+    $request->bindParam(3,$newSettings['teamComposition'],PDO::PARAM_INT);
+    $request->bindParam(4,$newSettings['gridSize'],PDO::PARAM_INT);
+    $request->bindParam(5,$newSettings['gamemode'],PDO::PARAM_INT);
+    $request->bindParam(6,$newSettings['difficulty'],PDO::PARAM_INT);
+    $request->bindParam(7,$newSettings['requiresPRank'],PDO::PARAM_BOOL);
+    $request->bindParam(8,$newSettings['disableCampaignAltExits'],PDO::PARAM_BOOL);
+    $request->bindParam(9,$newSettings['gameVisibility'],PDO::PARAM_INT);
+    $request->bindParam(10,$newSettings['gameModifier'],PDO::PARAM_INT);
+    $request->bindParam(11,$newSettings['allowRejoin'],PDO::PARAM_BOOL);
     $request->bindParam(12,$roomId,PDO::PARAM_INT);
     $request->execute();
 }

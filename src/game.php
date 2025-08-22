@@ -129,50 +129,6 @@ class GamePlayer
     }
 }
 
-class GameSettings
-{
-    public int $maxPlayers;
-    public int $maxTeams;
-    public int $timeLimit;
-    public int $teamComposition;
-    public int $gamemode;
-    public int $difficulty;
-    public int $gridSize;
-    public bool $requiresPRank;
-    public bool $disableCampaignAltExits;
-    public int $gameVisibility;
-    public bool $allowRejoin;
-    public int $gameModifier;
-
-    public int $dominationTimer;
-
-    public $selectedMapPools;
-
-    public bool $hasManuallySetTeams;
-
-    public $presetTeams;
-
-    public function __construct()
-    {
-        global $DOMINATION_TIME_MINUTES;
-
-        $this->maxPlayers = 8;
-        $this->maxTeams = 4;
-        $this->timeLimit = 5;                   //Time limit - 5 mins by default
-        $this->teamComposition = 0;             //Randomised teams by default
-        $this->gridSize = 0;                    //3x3 by default
-        $this->gamemode = 0;                    //Normal bingo by default
-        $this->difficulty = 2;                  //Standard by default
-        $this->requiresPRank = false;           //P-Rank not required by default
-        $this->disableCampaignAltExits = false; //Campaign alt exits not disabled by default
-        $this->allowRejoin = true;              //Allow (re)joining mid-game by default
-        $this->gameModifier = 0;                //No modifiers by default
-        $this->hasManuallySetTeams = false;
-        $this->selectedMapPools = array();
-
-        $this->dominationTimer = $this->timeLimit;
-    }
-}
 
 class Game
 {
@@ -188,9 +144,12 @@ class Game
 
     public array $teams; // Array of type <string, array(GamePlayer)> denoting the teams for a Game.
 
-    public GameSettings $gameSettings; //Settings for the game, represented by a GameSettings object.
-
     public BaseGamemode $gamemode; //Gamemode for the game, represented by a parent BingoGamemode object.
+
+    public $gameSettingsArray; //New settings dict that we will refactor the above to
+    public $selectedMaps;
+
+    public $presetTeams;
 
     public bool $hasEnded;
 
@@ -214,6 +173,28 @@ class Game
 
     public $rerollMapPool;
 
+    public function createSettingsDict()
+    {
+        $arr = array();
+        $arr['maxPlayers'] = 8;
+        $arr['maxTeams'] = 4;
+        $arr['timeLimit'] = 5;
+        $arr['teamComposition'] = 0;
+        $arr['gridSize'] = 0;
+        $arr['gamemode'] = 0;
+        $arr['difficulty'] = 2;
+        $arr['requiresPRank'] = 0;
+        $arr['disableCampaignAltExits'] = 0;
+        $arr['gameVisibility'] = 0;
+        $arr['allowRejoin'] = 1;
+        $arr['gameModifier'] = 0;
+
+        $arr['hasManuallySetTeams'] = 0;
+
+        return $arr;
+
+    }
+
     public function __construct($hostSteamName,$hostConnection,$gameId,$hostSteamId,$rank)
     {
         $this->currentPlayers = [];
@@ -227,7 +208,8 @@ class Game
         $this->addPlayerToGame($host,$hostSteamId,true);
 
         //Set the default settings.
-        $this->gameSettings = new GameSettings();
+        $this->gameSettingsArray = $this->createSettingsDict();
+        $this->selectedMaps = array();
 
         //Pre-generate the grid of levels, pending a new dynamic generation on game start.
         $this->grid = new GameGrid(3,array());
@@ -391,14 +373,14 @@ class Game
 
     public function updateMapPool($mapPoolList)
     {
-        $this->gameSettings->selectedMapPools = $mapPoolList;
+        $this->selectedMaps = $mapPoolList;
     }
 
     public function updateTeams($teamDict):void
     {
         logInfo("Manually setting teams for room ".$this->gameId." and locking room");
-        $this->gameSettings->presetTeams = $teamDict;
-        $this->gameSettings->hasManuallySetTeams = true;
+        $this->presetTeams = $teamDict;
+        $this->gameSettingsArray['hasManuallySetTeams'] = 1;
 
         updateRoomJoinPermission($this->gameId,0);
 
@@ -409,8 +391,8 @@ class Game
     public function clearTeams():void
     {
         logInfo("Clearing set teams for room ".$this->gameId." and unlocking room");
-        unset($this->gameSettings->presetTeams);
-        $this->gameSettings->hasManuallySetTeams = false;
+        unset($this->presetTeams);
+        $this->gameSettingsArray['hasManuallySetTeams'] = 0;
         updateRoomJoinPermission($this->gameId,1);
 
         $message = buildNetworkMessage("UpdateTeamsNotif",new UpdateTeams(1));
@@ -613,45 +595,29 @@ class GameController
         unset($game->currentPlayers[$playerToKick]);
     }
 
-    public function updateGameSettings($settings):void
+    public function updateGameSettings($roomId,$settings):void
     {
         $wereTeamsReset = false;
-        if(array_key_exists($settings['roomId'],$this->currentGames))
+        if(array_key_exists($roomId,$this->currentGames))
         {
             var_export($settings);
 
-            $gameToUpdate = $this->currentGames[$settings['roomId']];
+            $gameToUpdate = $this->currentGames[$roomId];
 
-            $newSettings = new GameSettings();
-            $newSettings->maxPlayers = $settings['maxPlayers'];
-            $newSettings->maxTeams = $settings['maxTeams'];
-            $newSettings->teamComposition = $settings['teamComposition'];
-            $newSettings->timeLimit = $settings['timeLimit'];
-            $newSettings->gamemode = $settings['gamemode'];
-            $newSettings->difficulty = $settings['difficulty'];
-            $newSettings->gridSize = $settings['gridSize'];
-            $newSettings->requiresPRank = $settings['PRankRequired'];
-            $newSettings->disableCampaignAltExits = $settings['disableCampaignAltExits'];
-            $newSettings->gameVisibility = $settings['gameVisibility'];
-            $newSettings->allowRejoin = $settings['allowRejoin'];
-            $newSettings->gameModifier = $settings['gameModifier'];
-            $newSettings->selectedMapPools = $this->currentGames[$settings['roomId']]->gameSettings->selectedMapPools;
-            $newSettings->hasManuallySetTeams = $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams;
-            $newSettings->presetTeams = $this->currentGames[$settings['roomId']]->gameSettings->presetTeams;
-
-            if($newSettings->teamComposition == 0 && $this->currentGames[$settings['roomId']]->gameSettings->hasManuallySetTeams)
+            if($settings['teamComposition'] == 0 && $this->currentGames[$roomId]->gameSettingsArray['hasManuallySetTeams'] == 1)
             {
-                $newSettings->hasManuallySetTeams = false;
-                $newSettings->presetTeams = null;
-                updateRoomJoinPermission($settings['roomId'],1);
+                $this->currentGames[$roomId]->gameSettingsArray['hasManuallySetTeams'] = 0;
+                $gameToUpdate->presetTeams = null;
+                updateRoomJoinPermission($roomId,1);
                 $wereTeamsReset = true;
             }
 
-            $this->currentGames[$settings['roomId']]->gameSettings = $newSettings;
+            //$this->currentGames[$roomId]->gameSettings = $newSettings;
+            $this->currentGames[$roomId]->gameSettingsArray = $settings;
 
-            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings['maxPlayers'],$settings['maxTeams'],$settings['teamComposition'],$settings['PRankRequired'],$settings['timeLimit'],$settings['difficulty'],$settings['gridSize'],$settings['disableCampaignAltExits'],$settings['gameVisibility'],$settings['gamemode'],$settings['allowRejoin'],$settings['gameModifier'],$wereTeamsReset));
+            $message = buildNetworkMessage("RoomUpdate",new RoomUpdateNotification($settings,$wereTeamsReset));
 
-            updateGameSettings($settings['roomId'],$newSettings);
+            updateGameSettings($roomId,$settings);
 
             foreach($gameToUpdate->currentPlayers as $playerSteamId => &$playerObj)
             {
@@ -663,7 +629,7 @@ class GameController
         }
         else
         {
-            logError("Trying to update settings for game id ".$settings['roomId']." but doesn't exist!");
+            logError("Trying to update settings for game id ".$roomId." but doesn't exist!");
         }
     }
 
@@ -673,9 +639,9 @@ class GameController
         {
             $gameToStart = $this->currentGames[$gameId];
 
-            if($gameToStart->gameSettings->hasManuallySetTeams)
+            if($gameToStart->gameSettingsArray['hasManuallySetTeams'] == 1)
             {
-                $gameToStart->setTeamsFromPreset($gameToStart->gameSettings->presetTeams);
+                $gameToStart->setTeamsFromPreset($gameToStart->presetTeams);
             }
             else
             {
@@ -683,9 +649,9 @@ class GameController
             }
 
             $gameToStart->gameState = GameState::inGame;
-            $gameToStart->generateGrid($gameToStart->gameSettings->gridSize+3,$selectedMapIds);
+            $gameToStart->generateGrid($gameToStart->gameSettingsArray['gridSize']+3,$selectedMapIds);
 
-            $gameToStart->gamemode = makeGamemode($gameToStart->gameSettings->gamemode);
+            $gameToStart->gamemode = makeGamemode($gameToStart->gameSettingsArray['gamemode']);
             $gameToStart->gamemode->setup($gameToStart);
 
             startGameInDB($gameId);
@@ -751,10 +717,10 @@ class GameController
         $dcMessage->disconnectCode = 1001;
         $dcMessage->disconnectMessage = "You have left the game.";
 
-        if($game->gameSettings->hasManuallySetTeams)
+        if($game->gameSettingsArray['hasManuallySetTeams'] == 1)
         {
-            $game->gameSettings->hasManuallySetTeams = false;
-            unset($game->gameSettings->presetTeams);
+            $game->gameSettingsArray['hasManuallySetTeams'] = 0;
+              unset($game->presetTeams);
             updateRoomJoinPermission($gameid,1);
         }
 

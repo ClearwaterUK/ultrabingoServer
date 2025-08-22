@@ -254,7 +254,7 @@ function onMessageRecieved($message,$connection):void
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
                     logMessage("Updating settings for room ".$receivedJson['roomId']);
-                    $gameCoordinator->updateGameSettings($receivedJson);
+                    $gameCoordinator->updateGameSettings($receivedJson['roomId'],$receivedJson['updatedSettings']);
                 }
                 break;
             }

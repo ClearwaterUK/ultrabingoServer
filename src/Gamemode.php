@@ -49,11 +49,10 @@ class DominationGamemode extends BaseGamemode implements IGameMode
     {
         logInfo("Setting up Domination gamemode");
 
-        $this->time = new EvTimer($game->gameSettings->timeLimit*60, 0, function() use ($game) {
+        $this->time = new EvTimer( $game->gameSettingsArray['timeLimit']*60, 0, function() use ($game) {
             $this->timeUp($game);
         });
-        logInfo("Timer started at ".$game->gameSettings->timeLimit
-            ."minutes");
+        logInfo("Timer started at ". $game->gameSettingsArray['timeLimit']." minutes");
     }
     public function onMapClaim(Game $game,$recievedJson,$submitResult,$mapIsBeingVoted):void
     {
