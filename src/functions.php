@@ -67,6 +67,7 @@ function verifyModList($modList,$steamId)
             "Healthbars",
             "JadeLib",
             "IntroSkip",
+            "New Titles",
             "PluginConfigurator",
             "StyleEditor",
             "StyleToasts",
