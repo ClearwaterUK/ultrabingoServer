@@ -509,7 +509,7 @@ function fetchAvailableRanks($steamId)
 
 }
 
-function broadcastToAllPlayers(Game $game,$message,callable $callback = null)
+function broadcastToAllPlayers(Game $game,$message,?callable $callback = null)
 {
     foreach($game->currentPlayers as $playerSteamId => &$playerObj)
     {
