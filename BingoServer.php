@@ -8,9 +8,8 @@ ini_set('display_errors', 1);
 
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
-$CLIENT_VERSION = '1.1.1';
+$CLIENT_VERSION = '1.2.0';
 $VOTE_TIMER = 25;
-$DOMINATION_TIME_MINUTES = 30;
 
 $connectionLog = array();
 $steamIdToUsernameTable = array();
@@ -26,6 +25,7 @@ loadEnvFile(__DIR__);
 $PORT = $_ENV['SERVER_PORT'];
 
 //Load all the NetworkMessage classes from the folder
+logInfo("Loading network messages");
 $networkMessageFolder = glob(__DIR__.'/NetworkMessages/*.php');
 foreach($networkMessageFolder as $file) { require_once $file;}
 
@@ -82,8 +82,6 @@ try {
         ->onDisconnect(function (WebSocket\Server $server, WebSocket\Connection $connection) {
             onClientDisconnect($server, $connection);
         });
-
-    //$server->setLogger(new BingoLogger());
     $server->start();
 } catch (Throwable $e) {
     logError("Server error!");

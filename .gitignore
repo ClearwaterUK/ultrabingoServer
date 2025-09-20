@@ -5,3 +5,4 @@ composer.lock
 err.log
 out.log
 readme.md
+motd.txt
