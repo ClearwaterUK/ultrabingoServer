@@ -547,13 +547,15 @@ function verifyMessageSanity($message)
         'gook',
         'fag',
         'faggot',
+        'kys',
         'negro',
-        'nig',
         'nigga',
         'nigger',
         'nig nog',
         'poof',
-        'poofter'
+        'poofter',
+        'tranny',
+        'troon'
     );
 
     return array_reduce($badWordFilter, fn($a, $n) => $a || str_contains($strippedMessage, $n), false) == false;
