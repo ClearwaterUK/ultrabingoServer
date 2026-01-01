@@ -80,3 +80,6 @@ insert ignore into userRanks(U_STEAMID, U_RANKID) values
 
 -- 76561199089592778 - Octoegg
 ('76561199089592778',7);
+
+-- - 76561199223013360 - Asura
+('76561199223013360',7);
