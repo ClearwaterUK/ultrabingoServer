@@ -224,7 +224,8 @@ function updateGameSettings(Int $roomId, $newSettings)
     R_DISABLECAMPAIGNALTEXIT = ?,
     R_ISPUBLIC = ?,
     R_MODIFIER = ?,
-    R_ALLOWREJOIN = ?
+    R_ALLOWREJOIN = ?,
+    R_HIDELEVELNAMES = ? 
     WHERE R_ID = ?");
 
     $request->bindParam(1,$newSettings['maxPlayers'],PDO::PARAM_INT);
@@ -238,7 +239,8 @@ function updateGameSettings(Int $roomId, $newSettings)
     $request->bindParam(9,$newSettings['gameVisibility'],PDO::PARAM_INT);
     $request->bindParam(10,$newSettings['gameModifier'],PDO::PARAM_INT);
     $request->bindParam(11,$newSettings['allowRejoin'],PDO::PARAM_BOOL);
-    $request->bindParam(12,$roomId,PDO::PARAM_INT);
+    $request->bindParam(12,$newSettings['hideLevelNames'],PDO::PARAM_BOOL);
+    $request->bindParam(13,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 

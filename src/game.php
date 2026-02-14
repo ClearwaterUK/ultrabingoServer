@@ -187,6 +187,7 @@ class Game
         $arr['disableCampaignAltExits'] = 0;
         $arr['gameVisibility'] = 0;
         $arr['allowRejoin'] = 1;
+        $arr['hideLevelNames'] = 0;
         $arr['gameModifier'] = 0;
 
         $arr['hasManuallySetTeams'] = 0;
