@@ -444,18 +444,15 @@ function onMessageRecieved($message,$connection):void
                 registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
                 break;
             }
-            case "VerifyModList":
+            case "InitialChecks":
             {
                 global $CLIENT_VERSION;
+
+                //Check player is using only whitelisted mods.
                 $verification = verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
 
                 //Fetch the ranks available for the current SteamID.
                 $availableRanks = fetchAvailableRanks($receivedJson['steamId']);
-                if($availableRanks == "")
-                {
-                    logInfo("No ranks for requesting SteamID");
-                }
-
 
                 //Fetch the current message of the day.
                 $motd = file_get_contents(__DIR__."/../motd.txt");
@@ -463,7 +460,7 @@ function onMessageRecieved($message,$connection):void
                 //Check if the player can use in-game chat
                 $canUseChat = hasChatAccess($receivedJson['steamId']);
 
-                $message = buildNetworkMessage("ModVerificationResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks,$canUseChat));
+                $message = buildNetworkMessage("InitialCheckResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks,$canUseChat));
                 sendEncodedMessage($message,$connection);
                 break;
             }

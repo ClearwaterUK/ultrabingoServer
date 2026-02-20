@@ -116,3 +116,5 @@ create table levels
 );
 
 source ./levels.sql;
+
+source ./modWhitelist.sql;

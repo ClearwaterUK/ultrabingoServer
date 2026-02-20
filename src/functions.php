@@ -56,36 +56,35 @@ function createRoomInDatabase($roomData)
 
 function verifyModList($modList,$steamId)
 {
-    $whitelistedMods =
-        [   "AngryLevelLoader",
-            "Baphomet's BINGO",
-            "BetterWeaponHUDs",
-            "Configgy",
-            "Damage Style HUD",
-            "EasyPZ",
-            "HandPaint",
-            "Healthbars",
-            "JadeLib",
-            "IntroSkip",
-            "New Titles",
-            "PluginConfigurator",
-            "StyleEditor",
-            "StyleToasts",
-            "UnityExplorer",
-            "USTManager"];
+    global $dbc;
+    $whitelistedModsList = array();
+
+    try {
+        $request = $dbc->prepare('SELECT modId, modName FROM allowedMods');
+        $request->execute();
+
+        $whitelistedModsList = $request->fetchAll();
+    }
+    catch(Exception $e)
+    {
+        logError($e->getMessage());
+        return array("Server was unable to connect to database. Please report to Clearwater!");
+    }
 
     $userUnauthorisedMods = array();
 
-    foreach($modList as $mod)
+    $whitelistedModIds = array_column($whitelistedModsList,"modId");
+
+    foreach($modList as $modId => $modName)
     {
-        if($mod == "UnityExplorer" && !($steamId == "76561198128998723"))
+        if($modId == "com.sinai.unityexplorer" && !($steamId == "76561198128998723"))
         {
             logWarn("Client has UnityExplorer but isn't dev!");
-            array_push($userUnauthorisedMods,$mod);
+            array_push($userUnauthorisedMods,$modName);
         }
-        else if(!in_array($mod,$whitelistedMods))
+        else if(!in_array($modId,$whitelistedModIds))
         {
-            array_push($userUnauthorisedMods,$mod);
+            array_push($userUnauthorisedMods,$modName);
         }
     }
 
