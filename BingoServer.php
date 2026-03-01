@@ -8,7 +8,7 @@ ini_set('display_errors', 1);
 
 $MAX_CONCURRENT_CONNECTIONS = 512;
 $TIMEOUT = 90;
-$CLIENT_VERSION = '1.2.0';
+$CLIENT_VERSION = '1.2.1';
 $VOTE_TIMER = 25;
 
 $connectionLog = array();
