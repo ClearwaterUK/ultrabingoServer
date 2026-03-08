@@ -7,26 +7,26 @@ class LevelInformation
 
     public string $levelName;
 
-    public bool $isAngryLevel;
+    public $levelType;
 
-    public string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
-    public string $angryLevelId;
+    public string $angryParentBundle; //If Angry level, GUID of the AngryBundleContainer needed to load this level.
 
-    public function __construct($levelName, $sceneName, $isAngryLevel=false, $angryParentBundle="")
+    public function __construct($levelData)
     {
-        $this->levelDisplayName = $levelName;
-        $this->sceneName = $sceneName;
+        var_export($levelData);
 
-        $this->levelName = $levelName;
-        $this->isAngryLevel = $isAngryLevel;
-        $this->angryParentBundle = ($isAngryLevel ? $angryParentBundle : "");
-        $this->angryLevelId = ($isAngryLevel ? $sceneName : "");
+        $this->levelDisplayName = $levelData['levelName'];
+        $this->sceneName = $levelData['levelId'];
+        $this->levelName = $levelData['levelName'];
+        $this->levelType = $levelData['levelType'];
+        $this->angryParentBundle = $levelData['angryBundleId'];
+        $this->UltraEditorLevelData = $levelData['UltraEditorLevelData'];
     }
 };
 
 function generatePool($mapDataArray,$isAngryPool=false)
 {
-    $arr = array();
+    /*$arr = array();
     foreach($mapDataArray as $mapData)
     {
         if($isAngryPool)
@@ -38,7 +38,7 @@ function generatePool($mapDataArray,$isAngryPool=false)
             array_push($arr,new LevelInformation($mapData[0],$mapData[1]));
         }
     }
-    return $arr;
+    return $arr;*/
 }
 
 $mapPools = [];

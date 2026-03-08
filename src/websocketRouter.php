@@ -261,6 +261,8 @@ function onMessageRecieved($message,$connection):void
 
             case "StartGame":
             {
+                var_export($receivedJson['selectedMapIds']);
+
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
                     logMessage("Starting game ".$receivedJson['roomId']);

@@ -27,4 +27,5 @@ insert into allowedMods (modId,modName,modLink) VALUES
 ("eternalUnion.ultrakill.styleEditor","UltrakillStyleEditor","https://thunderstore.io/c/ultrakill/p/EternalsTeam/UltrakillStyleEditor/"),
 ("StyleToasts","StyleToasts","https://thunderstore.io/c/ultrakill/p/The0x539/StyleToasts/"),
 ("com.sinai.unityexplorer","UnityExplorer","https://thunderstore.io/c/ultrakill/p/sinai-dev/UnityExplorer/"),
-("dev.zeddevstuff.ustmanager","USTManager","https://thunderstore.io/c/ultrakill/p/ZedDev/USTManager/");
+("dev.zeddevstuff.ustmanager","USTManager","https://thunderstore.io/c/ultrakill/p/ZedDev/USTManager/"),
+("duviz.ultrakill.ultraeditor","UltraEditor","https://thunderstore.io/c/ultrakill/p/duviz/UltraEditor")

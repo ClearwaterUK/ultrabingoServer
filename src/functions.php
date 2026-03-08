@@ -623,27 +623,4 @@ function getMapPools()
     return $request->fetchAll();
 }
 
-function fetchSelectedMapData($mapIds)
-{
-    global $CATALOG;
-
-    $levelData = array();
-
-    foreach($mapIds as $id)
-    {
-        //Campaign
-        if(str_contains($id,'Level '))
-        {
-            $levelData[$id] = array($id,$id,false,"");
-        }
-        //Custom level
-        else
-        {
-            $data = $CATALOG->levelInfo[$id];
-            $levelData[$id] = array($data[0],$data[1],true,$data[3]);
-        }
-    }
-    return $levelData;
-}
-
 ?>
