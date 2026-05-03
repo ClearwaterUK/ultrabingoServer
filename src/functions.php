@@ -623,4 +623,14 @@ function getMapPools()
     return $request->fetchAll();
 }
 
+function setBaseDifficulty($gameId,$baseDifficulty)
+{
+    global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames SET R_DIFFICULTY = ? WHERE R_ID = ?");
+    $request->bindParam(1,$baseDifficulty,PDO::PARAM_INT);
+    $request->bindParam(2,$gameId,PDO::PARAM_INT);
+
+    $request->execute();
+}
+
 ?>

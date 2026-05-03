@@ -47,8 +47,8 @@ class GameLevel
     public int $column;
     public int $levelType;
 
-    public string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
-    public string $UltraEditorLevelData; //URL of the UltraEditor level data needed to lood the level.
+    public ?string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
+    public ?string $UltraEditorLevelData; //URL of the UltraEditor level data needed to lood the level.
 
     public function __construct($levelDisplayName,$levelId,$levelType,$row,$column,$angryParentBundle,$UltraEditorLevelData)
     {
@@ -176,6 +176,8 @@ class Game
     public array $playersAlreadyVoted;
 
     public $rerollMapPool;
+
+    public array $difficultyOverride;
 
     public function createSettingsDict()
     {
@@ -533,6 +535,14 @@ class Game
         logWarn("GenerateGrid called with size".$size);
         $this->grid = new GameGrid($size,$mapIds);
     }
+
+
+    public function setDifficultySettings($gameId, $baseDifficulty, $difficultyOverride)
+    {
+        setBaseDifficulty($gameId,$baseDifficulty);
+        $this->difficultyOverride = $difficultyOverride;
+        $this->gameSettingsArray['difficulty'] = $baseDifficulty;
+    }
 }
 
 class GameController
@@ -675,9 +685,8 @@ class GameController
                 //Initialise vote status for all players
                 $gameToStart->playerVotePerms[$playerSteamId] = true;
 
-
                 //Send the game start signal to all players in the game
-                $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid));
+                $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid,$gameToStart->difficultyOverride));
 
                 sendEncodedMessage($message,$playerObj->websocketConnection);
             }
@@ -818,7 +827,7 @@ class GameController
             }
             else
             {
-                logWarn("Level ID doesn't match!");
+                logWarn("Level ID doesn't match!"); 
                 return false;
             }
         }

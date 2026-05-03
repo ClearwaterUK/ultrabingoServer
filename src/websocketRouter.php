@@ -612,6 +612,20 @@ function onMessageRecieved($message,$connection):void
                 break;
             }
 
+            case "DifficultyOverride":
+            {
+                if(verifyConnection(($receivedJson['ticket'])))
+                {
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        logWarn("Updating difficulty settings for game ".$gameId);
+                        $gameCoordinator->currentGames[$gameId]->setDifficultySettings($gameId,$receivedJson['baseDifficulty'],$receivedJson['difficultyOverride']);
+                    }
+                }
+                break;
+            }
+
             default: {logWarn("Unknown message: ".$receivedJson['messageType']); break;}
         }
     }

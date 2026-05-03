@@ -13,8 +13,6 @@ class LevelInformation
 
     public function __construct($levelData)
     {
-        var_export($levelData);
-
         $this->levelDisplayName = $levelData['levelName'];
         $this->sceneName = $levelData['levelId'];
         $this->levelName = $levelData['levelName'];
