@@ -177,7 +177,7 @@ class Game
 
     public $rerollMapPool;
 
-    public array $difficultyOverride;
+    public $difficultyOverride;
 
     public function createSettingsDict()
     {
@@ -237,6 +237,8 @@ class Game
         $this->votePosition = "";
         $this->playerVotePerms = array();
         $this->playersAlreadyVoted = array();
+
+        $this->difficultyOverride = array("1" => 1);
     }
 
     public function isVoteActive()
@@ -679,6 +681,8 @@ class GameController
             //Set minimum reroll vote treshold
             $gameToStart->voteThreshold = ceil(count($gameToStart->currentPlayers)*0.66);
             logInfo("Minimum votes for map reroll is ".$gameToStart->voteThreshold);
+
+            var_export($gameToStart->difficultyOverride);
 
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
