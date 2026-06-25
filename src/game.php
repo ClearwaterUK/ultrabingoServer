@@ -822,10 +822,10 @@ class GameController
 
             //Check that the submitted coords match.
             $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-            var_export($submissionData['levelName']);
+            var_export($submissionData['levelId']);
             var_export($levelInCard->levelId);
-            var_export($submissionData['levelName'] == $levelInCard->levelId);
-            if($submissionData['levelName'] == $levelInCard->levelId)
+            var_export($submissionData['levelId'] == $levelInCard->levelId);
+            if($submissionData['levelId'] == $levelInCard->levelId)
             {
                 return true;
             }
