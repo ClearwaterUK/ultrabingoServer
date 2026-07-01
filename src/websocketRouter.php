@@ -261,6 +261,8 @@ function onMessageRecieved($message,$connection):void
 
             case "StartGame":
             {
+                var_export($receivedJson['selectedMapIds']);
+
                 if(verifyConnection($receivedJson['ticket'],true))
                 {
                     logMessage("Starting game ".$receivedJson['roomId']);
@@ -444,18 +446,15 @@ function onMessageRecieved($message,$connection):void
                 registerConnection($connection,$receivedJson['steamTicket'],$receivedJson['steamId'],$receivedJson['steamUsername'],$receivedJson['gameId']);
                 break;
             }
-            case "VerifyModList":
+            case "InitialChecks":
             {
                 global $CLIENT_VERSION;
+
+                //Check player is using only whitelisted mods.
                 $verification = verifyModList($receivedJson['clientModList'],$receivedJson['steamId']);
 
                 //Fetch the ranks available for the current SteamID.
                 $availableRanks = fetchAvailableRanks($receivedJson['steamId']);
-                if($availableRanks == "")
-                {
-                    logInfo("No ranks for requesting SteamID");
-                }
-
 
                 //Fetch the current message of the day.
                 $motd = file_get_contents(__DIR__."/../motd.txt");
@@ -463,7 +462,7 @@ function onMessageRecieved($message,$connection):void
                 //Check if the player can use in-game chat
                 $canUseChat = hasChatAccess($receivedJson['steamId']);
 
-                $message = buildNetworkMessage("ModVerificationResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks,$canUseChat));
+                $message = buildNetworkMessage("InitialCheckResponse",new ValidateModlist($verification,$CLIENT_VERSION,$motd,$availableRanks,$canUseChat));
                 sendEncodedMessage($message,$connection);
                 break;
             }
@@ -602,13 +601,16 @@ function onMessageRecieved($message,$connection):void
                 break;
             }
 
-            case "GetMapPools":
+            case "DifficultyOverride":
             {
                 if(verifyConnection(($receivedJson['ticket'])))
                 {
-                    $mapPools = getMapPools();
-                    $message = buildNetworkMessage("MapPools", new MapPools($mapPools));
-                    sendEncodedMessage($message,$connection);
+                    $gameId = $receivedJson['gameId'];
+                    if(array_key_exists($gameId,$gameCoordinator->currentGames))
+                    {
+                        logWarn("Updating difficulty settings for game ".$gameId);
+                        $gameCoordinator->currentGames[$gameId]->setDifficultySettings($gameId,$receivedJson['baseDifficulty'],$receivedJson['difficultyOverride']);
+                    }
                 }
                 break;
             }

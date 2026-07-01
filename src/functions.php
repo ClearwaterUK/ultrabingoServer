@@ -56,36 +56,35 @@ function createRoomInDatabase($roomData)
 
 function verifyModList($modList,$steamId)
 {
-    $whitelistedMods =
-        [   "AngryLevelLoader",
-            "Baphomet's BINGO",
-            "BetterWeaponHUDs",
-            "Configgy",
-            "Damage Style HUD",
-            "EasyPZ",
-            "HandPaint",
-            "Healthbars",
-            "JadeLib",
-            "IntroSkip",
-            "New Titles",
-            "PluginConfigurator",
-            "StyleEditor",
-            "StyleToasts",
-            "UnityExplorer",
-            "USTManager"];
+    global $dbc;
+    $whitelistedModsList = array();
+
+    try {
+        $request = $dbc->prepare('SELECT modId, modName FROM allowedMods');
+        $request->execute();
+
+        $whitelistedModsList = $request->fetchAll();
+    }
+    catch(Exception $e)
+    {
+        logError($e->getMessage());
+        return array("Server was unable to connect to database. Please report to Clearwater!");
+    }
 
     $userUnauthorisedMods = array();
 
-    foreach($modList as $mod)
+    $whitelistedModIds = array_column($whitelistedModsList,"modId");
+
+    foreach($modList as $modId => $modName)
     {
-        if($mod == "UnityExplorer" && !($steamId == "76561198128998723"))
+        if($modId == "com.sinai.unityexplorer" && !($steamId == "76561198128998723"))
         {
             logWarn("Client has UnityExplorer but isn't dev!");
-            array_push($userUnauthorisedMods,$mod);
+            array_push($userUnauthorisedMods,$modName);
         }
-        else if(!in_array($mod,$whitelistedMods))
+        else if(!in_array($modId,$whitelistedModIds))
         {
-            array_push($userUnauthorisedMods,$mod);
+            array_push($userUnauthorisedMods,$modName);
         }
     }
 
@@ -224,7 +223,8 @@ function updateGameSettings(Int $roomId, $newSettings)
     R_DISABLECAMPAIGNALTEXIT = ?,
     R_ISPUBLIC = ?,
     R_MODIFIER = ?,
-    R_ALLOWREJOIN = ?
+    R_ALLOWREJOIN = ?,
+    R_HIDELEVELNAMES = ? 
     WHERE R_ID = ?");
 
     $request->bindParam(1,$newSettings['maxPlayers'],PDO::PARAM_INT);
@@ -238,7 +238,8 @@ function updateGameSettings(Int $roomId, $newSettings)
     $request->bindParam(9,$newSettings['gameVisibility'],PDO::PARAM_INT);
     $request->bindParam(10,$newSettings['gameModifier'],PDO::PARAM_INT);
     $request->bindParam(11,$newSettings['allowRejoin'],PDO::PARAM_BOOL);
-    $request->bindParam(12,$roomId,PDO::PARAM_INT);
+    $request->bindParam(12,$newSettings['hideLevelNames'],PDO::PARAM_BOOL);
+    $request->bindParam(13,$roomId,PDO::PARAM_INT);
     $request->execute();
 }
 
@@ -612,37 +613,14 @@ function setWarnLevel($steamId,$newWarnLevel)
     $request->execute();
 }
 
-function getMapPools()
+function setBaseDifficulty($gameId,$baseDifficulty)
 {
     global $dbc;
+    $request = $dbc->prepare("UPDATE currentGames SET R_DIFFICULTY = ? WHERE R_ID = ?");
+    $request->bindParam(1,$baseDifficulty,PDO::PARAM_INT);
+    $request->bindParam(2,$gameId,PDO::PARAM_INT);
 
-    $request = $dbc->prepare("SELECT mp.MP_ID AS MapPoolId, mp.MP_NAME AS MapPoolName, mp.MP_DESCRIPTION AS MapPoolDescription, COUNT(l.L_MPID) AS MapPoolLevelCount FROM levels l LEFT JOIN mappools mp ON l.L_MPID = mp.MP_ID GROUP BY l.L_MPID;");
     $request->execute();
-
-    return $request->fetchAll();
-}
-
-function fetchSelectedMapData($mapIds)
-{
-    global $CATALOG;
-
-    $levelData = array();
-
-    foreach($mapIds as $id)
-    {
-        //Campaign
-        if(str_contains($id,'Level '))
-        {
-            $levelData[$id] = array($id,$id,false,"");
-        }
-        //Custom level
-        else
-        {
-            $data = $CATALOG->levelInfo[$id];
-            $levelData[$id] = array($data[0],$data[1],true,$data[3]);
-        }
-    }
-    return $levelData;
 }
 
 ?>

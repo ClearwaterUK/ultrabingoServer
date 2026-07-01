@@ -24,6 +24,13 @@ enum Team: string
     case GREEN = "Green";
 }
 
+enum LevelType: int
+{
+    case CAMPAIGN = 0;
+    case ANGRY = 1;
+    case ULTRAEDITOR = 2;
+}
+
 //Represents a level in the Game grid of levels.
 class GameLevel
 {
@@ -38,16 +45,16 @@ class GameLevel
     //Coordinates in the GameGrid.
     public int $row;
     public int $column;
+    public int $levelType;
 
-    //Relevant data if the level is an Angry custom level.
-    public bool $isAngryLevel;
-    public string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
-    public string $angryLevelId;
+    public ?string $angryParentBundle; //GUID of the AngryBundleContainer needed to load this level.
+    public ?string $UltraEditorLevelData; //URL of the UltraEditor level data needed to lood the level.
 
-    public function __construct($levelDisplayName,$levelId,$row,$column,$isAngryLevel,$angryParentBundle,$angryLevelId)
+    public function __construct($levelDisplayName,$levelId,$levelType,$row,$column,$angryParentBundle,$UltraEditorLevelData)
     {
         $this->levelName = $levelDisplayName;
         $this->levelId = $levelId;
+        $this->levelType = $levelType;
 
         $this->claimedBy = Team::NONE;
         $this->personToBeat = "";
@@ -56,9 +63,8 @@ class GameLevel
         $this->row = $row;
         $this->column = $column;
 
-        $this->isAngryLevel = $isAngryLevel;
         $this->angryParentBundle = $angryParentBundle;
-        $this->angryLevelId = $angryLevelId;
+        $this->UltraEditorLevelData = $UltraEditorLevelData;
     }
 }
 
@@ -73,17 +79,14 @@ class GameGrid
 
     public function populateGrid($mapPoolIds):void
     {
-        global $mapPools;
-
         if(count($mapPoolIds) == 0) {return;}
 
-        //Fetch all the map data of selected maps from the Angry catalog.
-        $maps = fetchSelectedMapData($mapPoolIds);
-
         $levelPool = array();
-        foreach($maps as $map)
+
+        foreach($mapPoolIds as $map)
         {
-            $mapInfo = new LevelInformation($map[0],$map[1],$map[2],$map[3]);
+            var_export($map);
+            $mapInfo = new LevelInformation($map);
             array_push($levelPool,$mapInfo);
         }
 
@@ -94,9 +97,8 @@ class GameGrid
                 //Pick a level from our level list, set it, and then remove to prevent duplicates
                 $selectedIndex = array_rand($levelPool);
                 $levelObj = $levelPool[$selectedIndex];
-                $levelToInsert = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$x,$y,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
+                $levelToInsert = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$levelObj->levelType,$x,$y,$levelObj->angryParentBundle,$levelObj->UltraEditorLevelData);
 
-                //$levelToInsert = new GameLevel($rand,$x,$y);
                 $this->levelTable[$x."-".$y] = $levelToInsert;
                 unset($levelPool[$selectedIndex]);
             }
@@ -173,6 +175,8 @@ class Game
 
     public $rerollMapPool;
 
+    public $difficultyOverride;
+
     public function createSettingsDict()
     {
         $arr = array();
@@ -187,6 +191,8 @@ class Game
         $arr['disableCampaignAltExits'] = 0;
         $arr['gameVisibility'] = 0;
         $arr['allowRejoin'] = 1;
+        $arr['hideLevelNames'] = 0;
+        $arr['hidePlayerTimes'] = 0;
         $arr['gameModifier'] = 0;
 
         $arr['hasManuallySetTeams'] = 0;
@@ -229,6 +235,8 @@ class Game
         $this->votePosition = "";
         $this->playerVotePerms = array();
         $this->playersAlreadyVoted = array();
+
+        $this->difficultyOverride = array("1" => 1);
     }
 
     public function isVoteActive()
@@ -262,7 +270,7 @@ class Game
         $oldMapName = $this->grid->levelTable[$x."-".$y]->levelName;
         $index = array_rand($this->grid->reserveLevels);
         $levelObj = $this->grid->reserveLevels[$index];
-        $newLevel = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$x,$y,$levelObj->isAngryLevel,$levelObj->angryParentBundle,$levelObj->angryLevelId);
+        $newLevel = new GameLevel($levelObj->levelDisplayName,$levelObj->sceneName,$levelObj->levelType,$x,$y,$levelObj->angryParentBundle);
         $this->grid->levelTable[$x."-".$y] = $newLevel;
 
         logMessage("New rolled map is: ".$newLevel->levelName);
@@ -527,6 +535,14 @@ class Game
         logWarn("GenerateGrid called with size".$size);
         $this->grid = new GameGrid($size,$mapIds);
     }
+
+
+    public function setDifficultySettings($gameId, $baseDifficulty, $difficultyOverride)
+    {
+        setBaseDifficulty($gameId,$baseDifficulty);
+        $this->difficultyOverride = $difficultyOverride;
+        $this->gameSettingsArray['difficulty'] = $baseDifficulty;
+    }
 }
 
 class GameController
@@ -664,14 +680,15 @@ class GameController
             $gameToStart->voteThreshold = ceil(count($gameToStart->currentPlayers)*0.66);
             logInfo("Minimum votes for map reroll is ".$gameToStart->voteThreshold);
 
+            var_export($gameToStart->difficultyOverride);
+
             foreach($gameToStart->currentPlayers as $playerSteamId => &$playerObj)
             {
                 //Initialise vote status for all players
                 $gameToStart->playerVotePerms[$playerSteamId] = true;
 
-
                 //Send the game start signal to all players in the game
-                $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid));
+                $message = buildNetworkMessage("StartGame", new StartGameSignal($gameToStart,$playerObj->team,$gameToStart->teams[$playerObj->team],$gameToStart->grid,$gameToStart->difficultyOverride));
 
                 sendEncodedMessage($message,$playerObj->websocketConnection);
             }
@@ -803,13 +820,16 @@ class GameController
 
             //Check that the submitted coords match.
             $levelInCard = $currentGame->grid->levelTable[$submittedCoords];
-            if($submissionData['levelName'] == $levelInCard->levelId)
+            var_export($submissionData['levelId']);
+            var_export($levelInCard->levelId);
+            var_export($submissionData['levelId'] == $levelInCard->levelId);
+            if($submissionData['levelId'] == $levelInCard->levelId)
             {
                 return true;
             }
             else
             {
-                logWarn("Level ID doesn't match!");
+                logWarn("Level ID doesn't match!"); 
                 return false;
             }
         }

@@ -3,9 +3,8 @@ SET foreign_key_checks = 0;
 
 -- Add user
 DROP USER IF EXISTS 'ultrabingoUser'@'localhost';
-CREATE USER 'ultrabingoUser'@'localhost';
+CREATE USER 'ultrabingoUser'@'localhost' IDENTIFIED BY 'ultrabingo';
 GRANT PROCESS, SELECT, ALTER, DELETE, INSERT, UPDATE, DROP, LOCK TABLES ON *.* TO 'ultrabingoUser'@'localhost';
-SET PASSWORD FOR 'ultrabingoUser'@'localhost' = 'ultrabingo';
 
 -- Full reset of DB
 drop database if exists ultrabingo;
@@ -30,6 +29,7 @@ create table currentGames
     R_GAMEMODE int NOT NULL DEFAULT 0,
     R_GAMETYPE int NOT NULL DEFAULT 0, -- Todo: Remove this in 1.1
     R_ALLOWREJOIN int NOT NULL DEFAULT 0,
+    R_HIDELEVELNAMES int NOT NULL DEFAULT 0,
     R_DIFFICULTY int NOT NULL,
     R_PRANKREQUIRED BOOLEAN NOT NULL,
     R_DISABLECAMPAIGNALTEXIT BOOLEAN NOT NULL,
@@ -97,22 +97,5 @@ create table chatBlock
     B_WARNLEVEL tinyint -- 1 = warn, 2 == final warn, 3 == barred from chat use
 );
 
-create table mapPools
-(
-    MP_ID int NOT NULL AUTO_INCREMENT primary key,
-    MP_NAME varchar(64),
-    MP_DESCRIPTION varchar(512)
-);
 
-create table levels
-(
-    L_ID int NOT NULL AUTO_INCREMENT primary key,
-    L_LEVELNAME varchar(256),
-    L_LEVELID varchar(256),
-    L_LEVELISCUSTOM BOOLEAN NOT NULL DEFAULT 0,
-    L_ANGRYBUNDLE varchar(256),
-    L_MPID int NOT NULL,
-    FOREIGN KEY (L_MPID) REFERENCES mapPools(MP_ID)
-);
-
-source ./levels.sql;
+source ./modWhitelist.sql;
