@@ -11,6 +11,8 @@ class LevelInformation
 
     public string $angryParentBundle; //If Angry level, GUID of the AngryBundleContainer needed to load this level.
 
+    public string $UltraEditorLevelData; //If UltraEditor level, the URL of the level data to dowload from
+
     public function __construct($levelData)
     {
         $this->levelDisplayName = $levelData['levelName'];
