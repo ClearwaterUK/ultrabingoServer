@@ -79,8 +79,6 @@ class GameGrid
 
     public function populateGrid($mapPoolIds):void
     {
-        global $mapPools;
-
         if(count($mapPoolIds) == 0) {return;}
 
         $levelPool = array();

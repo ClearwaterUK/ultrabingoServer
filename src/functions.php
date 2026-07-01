@@ -613,16 +613,6 @@ function setWarnLevel($steamId,$newWarnLevel)
     $request->execute();
 }
 
-function getMapPools()
-{
-    global $dbc;
-
-    $request = $dbc->prepare("SELECT mp.MP_ID AS MapPoolId, mp.MP_NAME AS MapPoolName, mp.MP_DESCRIPTION AS MapPoolDescription, COUNT(l.L_MPID) AS MapPoolLevelCount FROM levels l LEFT JOIN mappools mp ON l.L_MPID = mp.MP_ID GROUP BY l.L_MPID;");
-    $request->execute();
-
-    return $request->fetchAll();
-}
-
 function setBaseDifficulty($gameId,$baseDifficulty)
 {
     global $dbc;

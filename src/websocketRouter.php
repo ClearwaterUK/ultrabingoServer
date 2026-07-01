@@ -601,17 +601,6 @@ function onMessageRecieved($message,$connection):void
                 break;
             }
 
-            case "GetMapPools":
-            {
-                if(verifyConnection(($receivedJson['ticket'])))
-                {
-                    $mapPools = getMapPools();
-                    $message = buildNetworkMessage("MapPools", new MapPools($mapPools));
-                    sendEncodedMessage($message,$connection);
-                }
-                break;
-            }
-
             case "DifficultyOverride":
             {
                 if(verifyConnection(($receivedJson['ticket'])))
